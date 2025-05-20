@@ -25,7 +25,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
         if (existingUser) {
-            return res.status(409).json({ message: "User already exists" });
+            return res.status(409).json({ 
+                success: false,
+                message: "User already exists" 
+            });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -39,10 +42,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             },
         });
 
-        return res.status(201).json({ message: "User registered successfully"});
+        return res.status(201).json({ 
+            success: true, 
+            message: "User registered successfully"
+        });
     } catch (error) {
         console.error("Registration Error:", error);
-        return res.status(500).json({ message: "Failed to register" });
+        return res.status(500).json({ 
+            success: false,
+            message: "Failed to register" 
+        });
     }
 }
 
