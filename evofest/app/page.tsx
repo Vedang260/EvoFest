@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import Navbar from '@/components/navbar';
+import Footer from '@/components/footer';
 
 // Mock data - expanded with more content
 const featuredEvents = [
@@ -294,6 +296,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+      <Navbar />
       {/* Hero Carousel */}
       <section className="relative overflow-hidden">
         <div className="relative h-[500px] w-full" ref={emblaRef}>
@@ -367,7 +370,7 @@ export default function Home() {
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <motion.h2 
-            className="mb-8 text-3xl font-bold text-gray-900"
+            className="mb-8 text-3xl font-bold text-purple-800"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -417,7 +420,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl font-bold text-gray-900">Upcoming Events</h2>
+            <h2 className="text-3xl font-bold text-purple-800">Upcoming Events</h2>
             <button className="flex items-center text-purple-600 hover:text-purple-700">
               View All <ArrowRightIcon className="ml-1 h-4 w-4" />
             </button>
@@ -487,7 +490,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl font-bold text-gray-900">Unique Experiences</h2>
+            <h2 className="text-3xl font-bold text-purple-800">Unique Experiences</h2>
             <button className="flex items-center text-purple-600 hover:text-purple-700">
               View All <ArrowRightIcon className="ml-1 h-4 w-4" />
             </button>
@@ -537,7 +540,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl font-bold text-gray-900">Popular Artists</h2>
+            <h2 className="text-3xl font-bold text-purple-800">Popular Artists</h2>
             <button className="flex items-center text-primary-600 hover:text-primary-700">
               View All <ArrowRightIcon className="ml-1 h-4 w-4" />
             </button>
@@ -585,7 +588,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl font-bold text-gray-900">Popular Venues</h2>
+            <h2 className="text-3xl font-bold text-purple-800">Popular Venues</h2>
             <button className="flex items-center text-purple-600 hover:text-purple-700">
               View All <ArrowRightIcon className="ml-1 h-4 w-4" />
             </button>
@@ -625,7 +628,8 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+      
+      <Footer />
     </div>
   );
 }
