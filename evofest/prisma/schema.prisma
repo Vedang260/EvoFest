@@ -6,10 +6,45 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ORGANIZER
+  ATTENDEE
+  STAFF
+}
+
+enum EventStatus {
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum TicketStatus {
+  RESERVED
+  PAID
+  CANCELLED
+  CHECKED_IN
+  EXPIRED
+}
+
+model User {
+  userId        String    @id @default(cuid())
+  username      String
+  email         String    @unique
+  password      String
+  role          UserRole  @default(ATTENDEE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // // Relations
+  // organizedEvents Event[]       @relation("EventOrganizer")
+  // tickets         Ticket[]
+  // checkIns        CheckIn[]     @relation("StaffCheckIns")
+  // staffEvents     EventStaff[]
 }
