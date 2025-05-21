@@ -21,6 +21,8 @@ import Footer from '@/components/footer';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { loginSuccess } from '../../lib/redux/slice/authSlice';
+import { useDispatch } from 'react-redux';
 
 interface FormValues {
   email: string;
@@ -31,6 +33,7 @@ const LoginPage = () => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
+    const dispatch = useDispatch();
 
     useEffect(() => {
         setMounted(true);
@@ -66,9 +69,19 @@ const LoginPage = () => {
       const result = response.data;
 
       if (result.success) {
-          // Registration was successful
+          // Login was successful
           console.log("Login successful:", result.message);
-          //router.push(`/register-success`);
+          dispatch(loginSuccess({
+            user: result?.user,
+            token: result?.token
+          }));
+          if(result.user.role === 'ATTENDEE'){
+              router.push('/events');
+          }else if(result.user.role === 'ORGANIZER'){
+              router.push('/');
+          }else if(result.user.role === 'STAFF'){
+
+          }
       } else {
         // Handle registration failure
         console.log("Login failed:", result.message);
