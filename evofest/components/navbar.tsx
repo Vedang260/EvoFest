@@ -21,8 +21,8 @@ const Navbar = () => {
     { name: 'Events', href: '/events', icon: <Calendar size={18} /> },
     { name: 'Tickets', href: '/tickets', icon: <Ticket size={18} /> },
     { name: 'Discover', href: '/discover' },
-    { name: 'Venues', href: '/venues' },
-    { name: 'Artists', href: '/artists' },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
   ];
 
   return (
@@ -76,12 +76,6 @@ const Navbar = () => {
                 <User size={18} />
                 <span>Sign In</span>
               </Link>
-              <Link
-                href="/events"
-                className="px-4 py-2 rounded-full bg-gradient-to-r from-primary-600 to-secondary-500 text-white text-sm font-medium shadow-md hover:shadow-lg transition-all hover:from-primary-700 hover:to-secondary-600"
-              >
-                Get Tickets
-              </Link>
             </div>
 
             {/* Mobile Menu Button */}
@@ -129,13 +123,6 @@ const Navbar = () => {
                     </div>
                   </Link>
                 </div>
-                <Link
-                  href="/events"
-                  className="block w-full mt-2 px-4 py-2 text-center rounded-full bg-gradient-to-r from-primary-600 to-secondary-500 text-white font-medium shadow-md hover:shadow-lg transition-all"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Get Tickets
-                </Link>
               </div>
             </motion.div>
           )}
