@@ -1,4 +1,3 @@
-import { Princess_Sofia } from 'next/font/google';
 import { z } from 'zod';
 
 const TicketTypeEnum = z.enum([
