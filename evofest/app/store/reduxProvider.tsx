@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '../../lib/redux/store/store';
+import { PageLoader } from '@/components/ui/loader';
 
 export default function ReduxProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
@@ -18,7 +19,7 @@ export default function ReduxProvider({ children }: { children: React.ReactNode 
 
   return (
     <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
+      <PersistGate loading={<PageLoader />} persistor={persistor} onBeforeLift={() => new Promise((resolve) => setTimeout(resolve, 3000))}>
         {children}
       </PersistGate>
     </Provider>
