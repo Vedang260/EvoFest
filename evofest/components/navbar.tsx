@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Ticket, Search, User, Calendar } from 'lucide-react';
+import { Menu, X, Ticket, User, Calendar } from 'lucide-react';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -44,7 +44,7 @@ const Navbar = () => {
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center"
               >
-                <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent">
+                <span className="text-5xl font-bold bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent">
                   EvoFest
                 </span>
               </motion.div>
@@ -56,7 +56,7 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors relative group"
+                  className="text-xl font-medium text-gray-700 hover:text-primary-600 transition-colors relative group"
                 >
                   {link.name}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 transition-all group-hover:w-full"></span>
@@ -66,9 +66,6 @@ const Navbar = () => {
 
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center space-x-4">
-              <button className="p-2 text-gray-600 hover:text-primary-600 rounded-full hover:bg-gray-100 transition-colors">
-                <Search size={18} />
-              </button>
               <Link
                 href="/login"
                 className="flex items-center space-x-1 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
