@@ -33,6 +33,32 @@ enum TicketStatus {
   EXPIRED
 }
 
+enum TicketLabel {
+  GENERAL
+  VIP
+  FIRST50
+  FIRST100
+}
+
+enum Category {
+  MUSIC
+  SPORTS
+  COMEDY
+  WORKSHOP
+  CONFERENCE
+  PARTIES
+  ARCADE
+  ART 
+  FOOD
+  FESTIVAL
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 model User {
   userId        String    @id @default(cuid())
   username      String
