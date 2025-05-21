@@ -92,8 +92,6 @@ model Event {
   status              EventStatus    @default(PUBLISHED)
   startDate           DateTime
   endDate             DateTime
-  startTime           String
-  endTime             String
   prohibitedItems     String[]
   termsAndConditions  String[]
   ticketTypes         TicketTypeEntry[]
@@ -103,6 +101,19 @@ model Event {
   organizer           User      @relation("OrganizerEvents", fields: [organizerId], references: [userId])
   checkIns            CheckIn[]
   bookings            Booking[]
+  schedule           EventSchedule[]
+}
+
+model EventSchedule {
+  eventScheduleId     String   @id @default(cuid())
+  eventId             String
+  date                DateTime
+  startTime           String
+  endTime             String
+
+  event      Event    @relation(fields: [eventId], references: [eventId])
+
+  @@unique([eventId, date])  // prevent duplicate schedules on same date
 }
 
 model TicketTypeEntry{

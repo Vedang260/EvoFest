@@ -22,8 +22,6 @@ export const eventSchema = z.object({
   endDate: z.string().refine(val => !isNaN(Date.parse(val)), {
     message: "endDate must be a valid ISO date string"
   }),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
   prohibitedItems: z.array(z.string()).optional(),
   termsAndConditions: z.array(z.string()).optional(),
   capacity: z.number().int().positive("Capacity must be a positive integer"),
