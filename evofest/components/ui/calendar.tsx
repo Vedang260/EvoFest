@@ -17,7 +17,7 @@ export function Calendar({
   ...props
 }: CalendarProps) {
   const [cssLoaded, setCssLoaded] = useState(false);
-
+    const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>();
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -49,7 +49,7 @@ export function Calendar({
   return (
     <DayPicker
       mode={mode}
-      selected={selected}
+      selected={dateRange}
       showOutsideDays={showOutsideDays}
       className={cn('p-3', className)}
       classNames={{

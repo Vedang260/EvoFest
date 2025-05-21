@@ -1,45 +1,29 @@
 import { z } from 'zod';
 
-// Enums from Prisma schema
-const EventCategoryEnum = z.enum([
-  'MUSIC', 'SPORTS', 'COMEDY', 'WORKSHOP', 'CONFERENCE', 'PARTIES',
-  'ARCADE', 'ART', 'FOOD', 'FESTIVAL', 'BUSINESS', 'TECH'
-]);
+const EventCategory = z.enum(["MUSIC", "SPORTS", "COMEDY", "WORKSHOP", "CONFERENCE", "PARTIES", "ARCADE", "ART", "FOOD", "FESTIVAL", "BUSINESS", "TECH"]);
 
-const EventStatusEnum = z.enum(['PUBLISHED', 'CANCELLED', 'COMPLETED']);
-
-const TicketTypeEnum = z.enum(["VIP", "GENERAL", "FIRST50", "FIRST100"]);
-
-const eventScheduleSchema = z.array(
-  z.object({
-    date: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Invalid date" }),
-    startTime: z.string().min(1, "Start time is required"),
-    endTime: z.string().min(1, "End time is required"),
-  })
-);
-
-const ticketTypeEntrySchema = z.array(
-  z.object({
-    type: TicketTypeEnum,
-    price: z.number().positive("Price must be positive"),
-    quantity: z.number().int().positive("Quantity must be positive integer"),
-  })
-);
+const dateSchema = z
+  .string()
+  .datetime({ offset: true })
+  .or(z.date())
+  .transform((val) => new Date(val));
 
 export const eventSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  category: EventCategoryEnum,
-  venue: z.string().min(1, "Venue is required"),
-  media: z.array(z.string().url("Each media item must be a valid URL")),
-  status: EventStatusEnum.optional().default("PUBLISHED"),
-  startDate: z.string().refine(val => !isNaN(Date.parse(val)), { message: "startDate must be a valid ISO date string" }),
-  endDate: z.string().refine(val => !isNaN(Date.parse(val)), { message: "endDate must be a valid ISO date string" }),
-  prohibitedItems: z.array(z.string()).optional(),
-  termsAndConditions: z.array(z.string()).optional(),
-  capacity: z.number().int().positive("Capacity must be a positive integer"),
-  organizerId: z.string().min(1, "Organizer ID is required"),
-
-  schedule: eventScheduleSchema,
-  ticketTypes: ticketTypeEntrySchema,
+    title: z.string().min(5, 'Title must be at least 5 characters').max(100, 'Title is too long'),
+    description: z.string().min(10, 'Description is too short').max(2000, 'Description is too long'),
+    category: EventCategory,
+    venue: z.string().min(3, 'Venue must be at least 3 characters'),
+    media: z.array(z.string().url("Invalid URL")).max(10, "Too many media items"),
+    startDate: dateSchema.refine((date) => date > new Date(), {
+      message: "Start date must be in the future",
+    }),
+    endDate: dateSchema,
+    prohibitedItems: z.array(z.string().max(50)).max(10).optional(),
+    termsAndConditions: z.array(z.string().max(500)).max(20).optional(),
+    capacity: z.number().int().positive("Capacity must be positive"),
+}).refine((data) => data.endDate >= data.startDate, {
+  message: "End Date must be after the start Date",
+  path: ["endDate"]
 });
+
+export type EventFormValues = z.infer<typeof eventSchema>;
