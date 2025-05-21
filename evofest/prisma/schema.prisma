@@ -33,14 +33,14 @@ enum TicketStatus {
   EXPIRED
 }
 
-enum TicketLabel {
+enum TicketType {
   GENERAL
   VIP
   FIRST50
   FIRST100
 }
 
-enum Category {
+enum EventCategory {
   MUSIC
   SPORTS
   COMEDY
@@ -51,12 +51,20 @@ enum Category {
   ART 
   FOOD
   FESTIVAL
+  BUSINESS
+  TECH
 }
 
 enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }
 
 model User {
@@ -69,8 +77,93 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // // Relations
-  // organizedEvents Event[]       @relation("EventOrganizer")
-  // tickets         Ticket[]
-  // checkIns        CheckIn[]     @relation("StaffCheckIns")
-  // staffEvents     EventStaff[]
+  events        Event[]       @relation("OrganizerEvents")
+  bookings      Booking[]
+  payments      Payment[]
+}
+
+model Event {
+  eventId             String @id @default(cuid())
+  title               String
+  description         String
+  category            EventCategory
+  venue               String
+  media               String[]
+  status              EventStatus    @default(PUBLISHED)
+  startDate           DateTime
+  endDate             DateTime
+  startTime           String
+  endTime             String
+  prohibitedItems     String[]
+  termsAndConditions  String[]
+  ticketTypes         TicketTypeEntry[]
+  capacity            Int
+  createdAt           DateTime  @default(now())
+  organizerId         String
+  organizer           User      @relation("OrganizerEvents", fields: [organizerId], references: [userId])
+  checkIns            CheckIn[]
+  bookings            Booking[]
+}
+
+model TicketTypeEntry{
+  ticketTypeEntryId  String  @id @default(cuid())
+  eventId            String  
+  event              Event    @relation(fields: [eventId], references: [eventId])
+  type               TicketType  
+  price              Float
+  quantity           Int
+  createdAt          DateTime  @default(now())
+  bookings    Booking[]
+}
+
+model Payment {
+  paymentId      String         @id @default(cuid())
+  attendeeId     String
+  transactionId  String
+  amount         Float
+  status         PaymentStatus  @default(PENDING)
+  paidDate       DateTime
+  attendee       User           @relation(fields: [attendeeId], references: [userId])
+  createdAt      DateTime       @default(now())
+
+  booking        Booking[]
+}
+
+model Booking {
+  bookingId          String     @id @default(cuid())
+  attendeeId         String
+  eventId            String
+  ticketTypeId       String
+  quantity           Int
+  totalPrice         Float
+  paymentId          String     
+  qrCode             String?    // store QR code URL or data
+  createdAt          DateTime   @default(now())
+
+  attendee           User       @relation(fields: [attendeeId], references: [userId])
+  event              Event      @relation(fields: [eventId], references: [eventId])
+  ticketType         TicketTypeEntry @relation(fields: [ticketTypeId], references: [ticketTypeEntryId])
+  payment            Payment    @relation(fields: [paymentId], references: [paymentId])
+  guests             Guest[]
+}
+
+model Guest {
+  guestId         String   @id @default(cuid())
+  bookingId       String
+  name            String
+  gender          Gender
+  age             Int
+  phoneNumber     String
+  booking         Booking  @relation(fields: [bookingId], references: [bookingId])
+  checkIns        CheckIn[]
+}
+
+model CheckIn {
+  checkInId     String    @id @default(cuid())
+  guestId       String
+  eventId       String
+  checkInAt     DateTime  @default(now())
+  guest         Guest     @relation(fields: [guestId], references: [guestId])
+  event         Event     @relation(fields: [eventId], references: [eventId])
+  @@unique([guestId, eventId]) 
 }
