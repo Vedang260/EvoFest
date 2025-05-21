@@ -28,7 +28,6 @@ interface FormValues {
 }
 
 const LoginPage = () => {
-    const [selectedRole, setSelectedRole] = useState<string | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
@@ -40,10 +39,6 @@ const LoginPage = () => {
     if (!mounted) return null;
 
     const validationSchema = Yup.object().shape({
-        username: Yup.string()
-        .min(3, 'Username must be at least 3 characters')
-        .max(20, 'Username must not exceed 20 characters')
-        .required('Username is required'),
         email: Yup.string()
         .email('Invalid email address')
         .required('Email is required'),
@@ -126,7 +121,7 @@ const LoginPage = () => {
             </motion.div>
           </div>
 
-          {/* Right Side - Registration Form Card */}
+          {/* Right Side - Login Form Card */}
           <div className="lg:w-1/2 flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
