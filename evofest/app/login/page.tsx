@@ -23,6 +23,7 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { loginSuccess } from '../../lib/redux/slice/authSlice';
 import { useDispatch } from 'react-redux';
+import { setLoading } from '@/lib/redux/slice/loadingSlice';
 
 interface FormValues {
   email: string;
@@ -58,7 +59,7 @@ const LoginPage = () => {
     try {
       console.log('Form data', values);
       setIsSubmitted(true);
-
+      dispatch(setLoading(true));
       const response = await axios.post('/api/auth/login', 
         values, {
         headers: {
@@ -92,6 +93,7 @@ const LoginPage = () => {
       toast.error(error.data.message);
     } finally {
       setSubmitting(false);
+      dispatch(setLoading(false));
     }
   };
 
