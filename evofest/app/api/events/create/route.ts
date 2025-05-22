@@ -11,27 +11,62 @@ export async function POST(request: Request) {
 
         if ('status' in user) return user;
         
+        // Step 2: Parse request
         const body = await request.json();
         console.log("Incoming request body:", body);
 
-        const eventBody = {...body, organizerId: user.userId};
+        // Extract nested fields
+        const { ticketTypes, schedule, ...eventData } = body;
+
+        // Add organizerId to event
+        const eventBody = { ...eventData};
+
+        // Step 3: Validate only event part
         const result = eventSchema.safeParse(eventBody);
 
         if (!result.success) {
-            return NextResponse.json(
-                { success: false, errors: result.error.flatten().fieldErrors }
-            );
+            return NextResponse.json({
+                success: false,
+                errors: result.error.flatten().fieldErrors,
+            });
         }
 
-        await prisma.event.create({
+        // Step 4: Create event
+        const newEvent = await prisma.event.create({
             data: {
-                ...result.data
-            }
+                ...eventData,
+                organizer: {
+                    connect: { userId: user.userId },
+                },
+            },
         });
 
-        return NextResponse.json({ 
-            success: true, 
-            message: "New Event is created successfully" 
+        const eventId = newEvent.eventId;
+
+        // Step 5: Insert ticketTypes (if present)
+        if (Array.isArray(ticketTypes) && ticketTypes.length > 0) {
+            await prisma.ticketTypeEntry.createMany({
+                data: ticketTypes.map((ticket) => ({
+                    ...ticket,
+                    eventId,
+                })),
+            });
+        }
+
+        // Step 6: Insert schedule (if present)
+        if (Array.isArray(schedule) && schedule.length > 0) {
+            await prisma.eventSchedule.createMany({
+                data: schedule.map((entry) => ({
+                    ...entry,
+                    eventId,
+                })),
+            });
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: "Event, schedule, and ticket types created successfully",
+            eventId,
         });
     } catch (error) {
         console.error("Error in creating a new Event:", error);
