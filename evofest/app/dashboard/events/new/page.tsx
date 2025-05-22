@@ -20,7 +20,11 @@ import { cn } from '../../../../lib/utils';
 import { eventSchema, type EventFormValues } from '../../../../lib/validations/event';
 import Navbar from '@/components/navbar';
 import Footer  from '@/components/footer';
-
+import { useAppSelector } from '@/lib/hooks/hook';
+import { useDispatch } from 'react-redux';
+import  axios from 'axios';
+import { useRouter } from 'next/navigation';
+import { resourceLimits } from 'worker_threads';
 // Interface for media files
 interface MediaFile extends File {
   preview?: string;
@@ -152,6 +156,7 @@ const CreateEventForm: React.FC = () => {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedFiles, setSelectedFiles] = useState<MediaFile[]>([]);
+    const router = useRouter();
     // const { setFieldValue, values } = useFormikContext<ExtendedEventFormValues>();
     const initialValues: ExtendedEventFormValues = {
         title: '',
@@ -167,7 +172,8 @@ const CreateEventForm: React.FC = () => {
         ticketTypes: [{ type: 'GENERAL', price: 0, quantity: 0 }],
         media: []
     };
-
+    const { token } = useAppSelector((state) => state.auth);
+    const dispatch = useDispatch();
   const validationSchema = createYupValidationSchema();
 
   const handleNext = () => setCurrentStep((prev) => prev + 1);
@@ -228,7 +234,7 @@ const handleFileChange = (
       const { schedule, ticketTypes, ...eventData } = values;
       
       const payload = {
-        event: {...eventData},
+        eventBody: {...eventData},
         ticketTypes: ticketTypes.map((ticket: { type: any; price: any; quantity: any; }) => ({
           type: ticket.type,
           price: Number(ticket.price),
@@ -245,12 +251,21 @@ const handleFileChange = (
       toast.success('Event created successfully!');
       
       // In a real app:
-      // const response = await fetch('/api/events', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(payload),
-      // });
-      // if (!response.ok) throw new Error('Failed to create event');
+      if(token){
+        const response = await axios.post(`/api/events/create`, payload, {
+          headers: {
+            "Authorization": `Bearer  ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        
+        if(response.data.success){
+          toast.success('New Event is created successfully');
+          router.push('/events');
+        }else{
+          toast.error(response.data.message);
+        }
+      }
     } catch (error) {
       console.error('Submission failed:', error);
       toast.error('Failed to create event.');
@@ -1162,7 +1177,6 @@ const handleFileChange = (
           )}
         </Formik>
       </div>
-          
     </div>
     <Footer />
     </>

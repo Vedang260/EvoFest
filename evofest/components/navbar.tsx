@@ -4,14 +4,27 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Ticket, User, Calendar, LogOut, Plus, LayoutDashboard, CreditCard, QrCode } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useAppSelector } from '@/lib/hooks/hook';
+import { logout } from '../lib/redux/slice/authSlice';
+import { useRouter } from 'next/navigation';
+
+// Define the interface for dropdown items
+interface DropdownItem {
+  name: string;
+  icon: React.ReactNode;
+  className?: string; // Optional className
+  href?: string; // Optional for navigation items
+  onClick?: () => void; // Optional for action items like logout
+}
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,67 +44,73 @@ const Navbar = () => {
 
   const handleProfileClick = () => {
     if (!isAuthenticated) {
-      // Redirect to login if not authenticated
-      window.location.href = '/login';
+      router.push('/login');
     } else {
       setIsProfileDropdownOpen(!isProfileDropdownOpen);
     }
   };
 
-  const getProfileDropdownItems = () => {
+  const handleLogout = () => {
+    dispatch(logout());
+    setIsProfileDropdownOpen(false);
+    setIsMenuOpen(false);
+    router.push('/');
+  };
+
+  const getProfileDropdownItems = (): DropdownItem[] => {
     if (!user?.role) return [];
-    
-    const commonItems = [
+
+    const commonItems: DropdownItem[] = [
       {
         name: 'Logout',
-        href: '/logout',
+        onClick: handleLogout,
         icon: <LogOut size={18} className="text-red-500" />,
-        className: 'text-red-500 hover:bg-red-50'
-      }
+        className: 'text-red-500 hover:bg-red-50',
+      },
     ];
 
-    switch(user.role) {
+    switch (user.role) {
       case 'ORGANIZER':
         return [
           {
             name: 'Your Events',
             href: '/organizer/events',
-            icon: <Calendar size={18} className="text-primary-600" />
+            icon: <Calendar size={18} className="text-primary-600" />,
           },
           {
             name: 'Create New Event',
             href: '/dashboard/events/new',
-            icon: <Plus size={18} className="text-primary-600" />
+            icon: <Plus size={18} className="text-primary-600" />,
           },
           {
             name: 'Organizer Dashboard',
             href: '/organizer/dashboard',
-            icon: <LayoutDashboard size={18} className="text-primary-600" />
+            icon: <LayoutDashboard size={18} className="text-primary-600" />,
           },
-          ...commonItems
+          ...commonItems,
         ];
       case 'ATTENDEE':
         return [
           {
             name: 'Your Bookings',
             href: '/bookings',
-            icon: <Ticket size={18} className="text-primary-600" />
+            icon: <Ticket size={18} className="text-primary-600" />,
           },
           {
             name: 'Your Payments',
             href: '/payments',
-            icon: <CreditCard size={18} className="text-primary-600" />
+            icon: <CreditCard size={18} className="text-primary-600" />,
           },
-          ...commonItems
+          ...commonItems,
         ];
       case 'STAFF':
         return [
           {
             name: 'Create Check-in',
             href: '/checkin',
-            icon: <QrCode size={18} className="text-primary-600" />
+            icon: <QrCode size={18} className="text-primary-600" />,
           },
-          ...commonItems
+          ...commonItems,
         ];
       default:
         return commonItems;
@@ -161,17 +180,28 @@ const Navbar = () => {
                         className="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
                       >
                         <div className="py-1">
-                          {getProfileDropdownItems().map((item) => (
-                            <Link
-                              key={item.name}
-                              href={item.href}
-                              className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${''}`}
-                              onClick={() => setIsProfileDropdownOpen(false)}
-                            >
-                              {item.icon}
-                              <span className="ml-2">{item.name}</span>
-                            </Link>
-                          ))}
+                          {getProfileDropdownItems().map((item) =>
+                            item.href ? (
+                              <Link
+                                key={item.name}
+                                href={item.href}
+                                className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${item.className || ''}`}
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                {item.icon}
+                                <span className="ml-2">{item.name}</span>
+                              </Link>
+                            ) : (
+                              <button
+                                key={item.name}
+                                onClick={item.onClick}
+                                className={`flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${item.className || ''}`}
+                              >
+                                {item.icon}
+                                <span className="ml-2">{item.name}</span>
+                              </button>
+                            )
+                          )}
                         </div>
                       </motion.div>
                     )}
@@ -233,24 +263,42 @@ const Navbar = () => {
                           <span>{user?.username.toLocaleUpperCase()}</span>
                         </div>
                       </div>
-                      {getProfileDropdownItems().map((item) => (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          className={`block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-50 transition-colors ${'text-gray-700 hover:text-primary-600'}`}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <div className="flex items-center space-x-2">
-                            {item.icon}
-                            <span>{item.name}</span>
-                          </div>
-                        </Link>
-                      ))}
+                      {getProfileDropdownItems().map((item) =>
+                        item.href ? (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            className={`block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-50 transition-colors ${
+                              item.className || 'text-gray-700 hover:text-primary-600'
+                            }`}
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <div className="flex items-center space-x-2">
+                              {item.icon}
+                              <span>{item.name}</span>
+                            </div>
+                          </Link>
+                        ) : (
+                          <button
+                            key={item.name}
+                            onClick={item.onClick}
+                            className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-50 transition-colors ${
+                              item.className || 'text-gray-700 hover:text-primary-600'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              {item.icon}
+                              <span>{item.name}</span>
+                            </div>
+                          </button>
+                        )
+                      )}
                     </>
                   ) : (
                     <Link
                       href="/login"
                       className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
                     >
                       <div className="flex items-center space-x-2">
                         <User size={18} />
@@ -264,7 +312,7 @@ const Navbar = () => {
           )}
         </AnimatePresence>
       </motion.header>
-      
+
       {/* Spacer for fixed header */}
       <div className="h-16"></div>
     </>

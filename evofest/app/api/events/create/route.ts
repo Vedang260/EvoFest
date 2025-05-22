@@ -16,10 +16,7 @@ export async function POST(request: Request) {
         console.log("Incoming request body:", body);
 
         // Extract nested fields
-        const { ticketTypes, schedule, ...eventData } = body;
-
-        // Add organizerId to event
-        const eventBody = { ...eventData};
+        const { ticketTypes, schedule, eventBody } = body;
 
         // Step 3: Validate only event part
         const result = eventSchema.safeParse(eventBody);
@@ -34,7 +31,7 @@ export async function POST(request: Request) {
         // Step 4: Create event
         const newEvent = await prisma.event.create({
             data: {
-                ...eventData,
+                ...eventBody,
                 organizer: {
                     connect: { userId: user.userId },
                 },
