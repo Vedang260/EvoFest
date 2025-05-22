@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Formik, Form, Field, FieldArray, useFormikContext, setNestedObjectValues } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar as CalendarIcon, Clock, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, FileVideo, Loader2, Plus, Trash2, UploadCloud } from 'lucide-react';
 import { format, addDays, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import * as Yup from 'yup';
@@ -18,8 +18,11 @@ import { Calendar } from '../../../../components/ui/calendar';
 import TimePicker from '../../../../components/ui/timePicker';
 import { cn } from '../../../../lib/utils';
 import { eventSchema, type EventFormValues } from '../../../../lib/validations/event';
-import { EventScheduleSchema } from '../../../../lib/validations/eventSchedule';
-import { create } from 'node:domain';
+
+// Interface for media files
+interface MediaFile extends File {
+  preview?: string;
+}
 
 // Extend the EventFormValues type to include schedule and ticketTypes
 type ExtendedEventFormValues = EventFormValues & {
@@ -34,13 +37,6 @@ type ExtendedEventFormValues = EventFormValues & {
     quantity: number;
   }>;
 };
-
-// Mock cloudinary config (replace with your actual config)
-const cloudinaryConfig = {
-  cloudName: 'demo',
-  uploadPreset: 'preset1',
-};
-
 
 const createYupValidationSchema = () => {
   // Convert Zod schema to Yup-compatible schema
@@ -150,24 +146,25 @@ const createYupValidationSchema = () => {
 };
 
 const CreateEventForm: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const initialValues: ExtendedEventFormValues = {
-    title: '',
-    description: '',
-    category: 'MUSIC',
-    venue: '',
-    startDate: new Date(),
-    endDate: new Date(),
-    schedule: [],
-    prohibitedItems: [''],
-    termsAndConditions: [''],
-    capacity: 100,
-    ticketTypes: [{ type: 'GENERAL', price: 0, quantity: 0 }],
-    media: []
-  };
+    const [currentStep, setCurrentStep] = useState(0);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFiles, setSelectedFiles] = useState<MediaFile[]>([]);
+    // const { setFieldValue, values } = useFormikContext<ExtendedEventFormValues>();
+    const initialValues: ExtendedEventFormValues = {
+        title: '',
+        description: '',
+        category: 'MUSIC',
+        venue: '',
+        startDate: new Date(),
+        endDate: new Date(),
+        schedule: [],
+        prohibitedItems: [''],
+        termsAndConditions: [''],
+        capacity: 100,
+        ticketTypes: [{ type: 'GENERAL', price: 0, quantity: 0 }],
+        media: []
+    };
 
   const validationSchema = createYupValidationSchema();
 
@@ -175,36 +172,53 @@ const CreateEventForm: React.FC = () => {
 
   const handlePrev = () => setCurrentStep((prev) => prev - 1);
 
-  const handleCloudinaryUpload = async (file: File): Promise<string | null> => {
-    setUploading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const fileUrl = URL.createObjectURL(file);
-      return fileUrl;
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error('Failed to upload file.');
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  };
+const [isUploading, setIsUploading] = useState(false);
+const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const handleFileChange = async (
+const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    setFieldValue: (field: string, value: any) => void,
-    currentMedia: string[]
+    setFieldValue: (field: string, value: any) => void
   ) => {
-    const files = e.target.files;
-    if (!files) return;
+    const files = Array.from(e.target.files || []) as MediaFile[];
 
-    const urls: string[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const url = await handleCloudinaryUpload(files[i]);
-      if (url) urls.push(url);
-    }
-    setFieldValue('media', [...currentMedia, ...urls]);
+    // Validate file types and sizes
+    const validFiles = files.filter((file) => {
+      const isValidType = file.type.match('image.*') || file.type.match('video.*');
+      const isValidSize = file.size <= 50 * 1024 * 1024; // 50MB
+
+      if (!isValidType) {
+        toast.error(`${file.name} is not a supported file type`);
+        return false;
+      }
+      if (!isValidSize) {
+        toast.error(`${file.name} is too large (max 50MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    // Create previews for images
+    const filesWithPreviews = validFiles.map((file) => {
+      if (file.type.match('image.*')) {
+        file.preview = URL.createObjectURL(file);
+      }
+      return file;
+    });
+
+    setSelectedFiles((prev) => [...prev, ...filesWithPreviews]);
+    e.target.value = ''; // Reset input
   };
+
+  // Cleanup preview URLs
+  useEffect(() => {
+    return () => {
+      selectedFiles.forEach((file) => {
+        if (file.preview) {
+          URL.revokeObjectURL(file.preview);
+        }
+      });
+    };
+  }, [selectedFiles]);
 
   const handleSubmit = async (values: ExtendedEventFormValues) => {
     try {
@@ -886,84 +900,180 @@ const CreateEventForm: React.FC = () => {
                     )}
 
                     {currentStep === 4 && (
-                      <div className="space-y-6">
-                        <h2 className="text-xl font-semibold text-purple-800">Media Upload</h2>
-                        
-                        {/* Media Upload */}
-                        <div>
-                          <label className="block text-sm font-medium mb-2 text-gray-600">
-                            Upload Images & Videos
-                          </label>
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={(e) => handleFileChange(e, setFieldValue, values.media)}
-                            multiple
-                            accept="image/*,video/*"
-                            className="hidden"
-                          />
-                          <div
-                            onClick={() => fileInputRef.current?.click()}
-                            className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 transition-colors"
-                          >
-                            <UploadCloud className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                            <p className="text-gray-600 mb-2">
-                              Drag & drop files here, or click to select
-                            </p>
-                            <p className="text-sm text-gray-400">
-                              Supports JPG, PNG, GIF, MP4 (max 50MB each)
-                            </p>
-                          </div>
-                          {errors.media && (
-                            <div className="text-red-500 text-sm mt-1">{errors.media as string}</div>
-                          )}
-                        </div>
-                        
-                        {/* Media Preview */}
-                        {values.media.length > 0 && (
-                          <div>
-                            <label className="block text-sm font-medium mb-2 text-gray-600">
-                              Uploaded Media
-                            </label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                              {values.media.map((url: string, index: any) => (
-                                <div
-                                  key={index}
-                                  className="relative group rounded-lg overflow-hidden border border-gray-200"
-                                >
-                                  {url.match(/\.(mp4|webm|mov)$/i) ? (
-                                    <video
-                                      src={url}
-                                      className="w-full h-32 object-cover"
-                                      muted
-                                      loop
-                                      playsInline
-                                    />
-                                  ) : (
-                                    <img
-                                      src={url}
-                                      alt={`Event media ${index + 1}`}
-                                      className="w-full h-32 object-cover"
-                                    />
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newMedia = [...values.media];
-                                      newMedia.splice(index, 1);
-                                      setFieldValue('media', newMedia);
-                                    }}
-                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-purple-800">Media Upload</h2>
+
+                  {/* Upload Area */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-600">
+                      Upload Images & Videos*
+                    </label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={(e) => handleFileChange(e, setFieldValue)}
+                      multiple
+                      accept="image/*,video/*"
+                      className="hidden"
+                    />
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 transition-colors"
+                    >
+                      <UploadCloud className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                      <p className="text-gray-600 mb-2">
+                        Drag & drop files here, or click to select
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Supports JPG, PNG, GIF, MP4 (max 50MB each)
+                      </p>
+                    </div>
+                    {errors.media && touched.media && (
+                      <div className="text-red-500 text-sm mt-1">{errors.media as string}</div>
                     )}
+                  </div>
+
+                  {/* Selected Files Preview (before upload) */}
+                {selectedFiles.length > 0 && Array.isArray(selectedFiles) && (
+                <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-600">
+                    Selected Files
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {selectedFiles.map((file, index) => (
+                        <div
+                        key={index}
+                        className="relative group rounded-lg overflow-hidden border border-gray-200"
+                        >
+                        {file.type.match('video.*') ? (
+                            <div className="w-full h-32 bg-gray-100 flex items-center justify-center">
+                            <FileVideo className="h-8 w-8 text-gray-400" />
+                            <span className="absolute bottom-2 left-2 text-xs text-gray-600 truncate w-[90%]">
+                                {file.name}
+                            </span>
+                            </div>
+                        ) : (
+                            file.preview && (
+                            <img
+                                src={file.preview}
+                                alt={file.name}
+                                className="w-full h-32 object-cover"
+                            />
+                            )
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => {
+                            setSelectedFiles((prev) => {
+                                const newFiles = prev.filter((_, i) => i !== index);
+                                if (file.preview) {
+                                URL.revokeObjectURL(file.preview);
+                                }
+                                return newFiles;
+                            });
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </button>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+                )}
+                {/* Media Upload Button */}
+      {selectedFiles.length > 0 && (
+        <button
+          type="button"
+          onClick={async () => {
+            setIsUploading(true);
+            try {
+              const formData = new FormData();
+              selectedFiles.forEach(file => formData.append('files', file));
+
+              const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+              });
+
+              const result = await response.json();
+              console.log('Upload success:', result);
+
+              if (result.success && result.urls?.length > 0) {
+                // Append new URLs to existing media field
+                setFieldValue('media', [...values.media, ...result.urls]);
+                setSelectedFiles([]);
+              }
+            } catch (error) {
+              console.error('Upload error:', error);
+            } finally {
+              setIsUploading(false);
+            }
+          }}
+          disabled={isUploading}
+          className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded"
+        >
+          {isUploading ? 'Uploading...' : 'Upload Media'}
+        </button>
+      )}
+
+      {/* You can add media preview here */}
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+        {values.media.map((url, idx) => (
+          <img key={idx} src={url} alt={`media-${idx}`} className="rounded shadow-md" />
+        ))}
+      </div>
+
+                {/* Uploaded Media Preview */}
+                {values.media.length > 0 && Array.isArray(values.media) && (
+                <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-600">
+                    Uploaded Media
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {values.media
+                        .filter((url) => typeof url === 'string' && url.startsWith('http'))
+                        .map((url, index) => (
+                        <div
+                            key={index}
+                            className="relative group rounded-lg overflow-hidden border border-gray-200"
+                        >
+                            {url.match(/\.(mp4|webm|mov)$/i) ? (
+                            <video
+                                src={url}
+                                className="w-full h-32 object-cover"
+                                muted
+                                loop
+                                playsInline
+                                controls
+                                onError={() => toast.error(`Failed to load media ${index + 1}`)}
+                            />
+                            ) : (
+                            <img
+                                src={url}
+                                alt={`Media ${index + 1}`}
+                                className="w-full h-32 object-cover"
+                                onError={() => toast.error(`Failed to load image ${index + 1}`)}
+                            />
+                            )}
+                            <button
+                            type="button"
+                            onClick={() => {
+                                const newMedia = [...values.media];
+                                newMedia.splice(index, 1);
+                                setFieldValue('media', newMedia);
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                            <Trash2 className="h-3 w-3" />
+                            </button>
+                        </div>
+                        ))}
+                    </div>
+                </div>
+                )}
+                </div>
+              )}
                   </motion.div>
                 </AnimatePresence>
               </div>
