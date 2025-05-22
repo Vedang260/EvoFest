@@ -18,6 +18,8 @@ import { Calendar } from '../../../../components/ui/calendar';
 import TimePicker from '../../../../components/ui/timePicker';
 import { cn } from '../../../../lib/utils';
 import { eventSchema, type EventFormValues } from '../../../../lib/validations/event';
+import Navbar from '@/components/navbar';
+import Footer  from '@/components/footer';
 
 // Interface for media files
 interface MediaFile extends File {
@@ -226,7 +228,7 @@ const handleFileChange = (
       const { schedule, ticketTypes, ...eventData } = values;
       
       const payload = {
-        ...eventData,
+        event: {...eventData},
         ticketTypes: ticketTypes.map((ticket: { type: any; price: any; quantity: any; }) => ({
           type: ticket.type,
           price: Number(ticket.price),
@@ -256,6 +258,8 @@ const handleFileChange = (
   };
 
   return (
+    <>
+        <Navbar />
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg">
         <motion.h1
@@ -1158,7 +1162,10 @@ const handleFileChange = (
           )}
         </Formik>
       </div>
+          
     </div>
+    <Footer />
+    </>
   );
 };
 
