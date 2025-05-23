@@ -18,7 +18,7 @@
 //                 },
 //             },
 //             include: {
-//                 schedule: true,
+                
 //                 ticketTypes: true,
 //             },
 //             orderBy: {
