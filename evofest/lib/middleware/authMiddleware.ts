@@ -14,7 +14,7 @@ export async function authMiddleware(
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
 
-  const token = authHeader?.split('  ')?.[1]?.trim();
+  const token = authHeader?.split(' ')?.[1]?.trim();
   console.log("Extracted Token:", token);
 if (!token) {
   return NextResponse.json({ success: false, message: 'Unauthorized - Token missing' }, { status: 401 });

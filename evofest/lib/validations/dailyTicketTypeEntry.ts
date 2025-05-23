@@ -5,7 +5,7 @@ const TicketTypeEnum = z.enum([
 ]);
 
 export const dailyTicketTypeEntrySchema = z.object({
-    eventScheduleId: z.string().min(1, "EventScheduleId is required"),
+    eventScheduleId: z.string().min(1, "EventScheduleId is required").optional(),
     type: TicketTypeEnum,
     price: z.number().int().positive("Price must be a positive integer"),
     quantity: z.number().int().positive("QUntity must be a positive integer")
