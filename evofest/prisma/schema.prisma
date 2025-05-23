@@ -94,14 +94,13 @@ model Event {
   endDate             DateTime
   prohibitedItems     String[]
   termsAndConditions  String[]
-  ticketTypes         TicketTypeEntry[]
   capacity            Int
   createdAt           DateTime  @default(now())
   organizerId         String
-  organizer           User      @relation("OrganizerEvents", fields: [organizerId], references: [userId])
+  organizer           User      @relation("OrganizerEvents", fields: [organizerId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
   checkIns            CheckIn[]
   bookings            Booking[]
-  schedule           EventSchedule[]
+  eventSchedule            EventSchedule[]
 }
 
 model EventSchedule {
@@ -110,21 +109,22 @@ model EventSchedule {
   date                DateTime
   startTime           String
   endTime             String
+  capacity            Int
 
-  event      Event    @relation(fields: [eventId], references: [eventId])
+  event               Event    @relation(fields: [eventId], references: [eventId], onDelete: Cascade, onUpdate: Cascade)
+  dailyTickets        DailyTicketTypeEntry[]
 
   @@unique([eventId, date])  // prevent duplicate schedules on same date
 }
 
-model TicketTypeEntry{
-  ticketTypeEntryId  String  @id @default(cuid())
-  eventId            String  
-  event              Event    @relation(fields: [eventId], references: [eventId])
-  type               TicketType  
-  price              Float
-  quantity           Int
-  createdAt          DateTime  @default(now())
-  bookings    Booking[]
+model DailyTicketTypeEntry{
+  dailyTicketTypeEntryId  String           @id @default(cuid())
+  eventScheduleId         String  
+  eventSchedule           EventSchedule    @relation(fields: [eventScheduleId], references: [eventScheduleId], onDelete: Cascade, onUpdate: Cascade)
+  type                    TicketType  
+  price                   Float
+  quantity                Int
+  createdAt               DateTime         @default(now())
 }
 
 model Payment {
@@ -134,7 +134,7 @@ model Payment {
   amount         Float
   status         PaymentStatus  @default(PENDING)
   paidDate       DateTime
-  attendee       User           @relation(fields: [attendeeId], references: [userId])
+  attendee       User           @relation(fields: [attendeeId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
   createdAt      DateTime       @default(now())
 
   booking        Booking[]
@@ -144,17 +144,17 @@ model Booking {
   bookingId          String     @id @default(cuid())
   attendeeId         String
   eventId            String
-  ticketTypeId       String
+  bookingDate        DateTime
+  ticketType         TicketType
   quantity           Int
   totalPrice         Float
   paymentId          String     
   qrCode             String?    // store QR code URL or data
   createdAt          DateTime   @default(now())
 
-  attendee           User       @relation(fields: [attendeeId], references: [userId])
-  event              Event      @relation(fields: [eventId], references: [eventId])
-  ticketType         TicketTypeEntry @relation(fields: [ticketTypeId], references: [ticketTypeEntryId])
-  payment            Payment    @relation(fields: [paymentId], references: [paymentId])
+  attendee           User       @relation(fields: [attendeeId], references: [userId], onDelete: Cascade)
+  event              Event      @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+  payment            Payment    @relation(fields: [paymentId], references: [paymentId], onDelete: Cascade)
   guests             Guest[]
 }
 
@@ -165,7 +165,7 @@ model Guest {
   gender          Gender
   age             Int
   phoneNumber     String
-  booking         Booking  @relation(fields: [bookingId], references: [bookingId])
+  booking         Booking  @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
   checkIns        CheckIn[]
 }
 
@@ -174,7 +174,7 @@ model CheckIn {
   guestId       String
   eventId       String
   checkInAt     DateTime  @default(now())
-  guest         Guest     @relation(fields: [guestId], references: [guestId])
-  event         Event     @relation(fields: [eventId], references: [eventId])
+  guest         Guest     @relation(fields: [guestId], references: [guestId], onDelete: Cascade)
+  event         Event     @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
   @@unique([guestId, eventId]) 
 }
