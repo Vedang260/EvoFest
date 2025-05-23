@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from "@prisma/client";
-import { getServerSession } from 'next-auth'
 import { authMiddleware } from "@/lib/middleware/authMiddleware";
 
 const prisma = new PrismaClient();
@@ -11,7 +10,7 @@ export async function GET(request: Request) {
         const user = await authMiddleware(request, ['ORGANIZER', 'ADMIN', 'STAFF', 'ATTENDEE']);
 
         if ('status' in user) return user;
-
+        const now = new Date();
         const events = await prisma.event.findMany({
             include: {
                 schedule: true,
@@ -24,7 +23,8 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             success: true,
-            message: 'All events are fetched successfully'
+            message: 'All events are fetched successfully',
+            events: events
         })
     } catch (error) {
         return NextResponse.json({ 
