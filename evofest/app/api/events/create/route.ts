@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         console.log("Incoming request body:", body);
 
         // Extract nested fields
-        const { ticketTypes, schedule, eventBody } = body;
+        const { schedules, eventBody } = body;
 
         // Step 3: Validate only event part
         const result = eventSchema.safeParse(eventBody);
@@ -40,30 +40,34 @@ export async function POST(request: Request) {
 
         const eventId = newEvent.eventId;
 
-        // Step 5: Insert ticketTypes (if present)
-        if (Array.isArray(ticketTypes) && ticketTypes.length > 0) {
-            await prisma.ticketTypeEntry.createMany({
-                data: ticketTypes.map((ticket) => ({
-                    ...ticket,
-                    eventId,
-                })),
-            });
-        }
+        // Process each schedule with ticketTypes
+        for (const schedule of schedules) {
+            const { ticketTypes, ...scheduleData } = schedule;
 
-        // Step 6: Insert schedule (if present)
-        if (Array.isArray(schedule) && schedule.length > 0) {
-            await prisma.eventSchedule.createMany({
-                data: schedule.map((entry) => ({
-                    ...entry,
+            // Create schedule and get ID
+            const createdSchedule = await prisma.eventSchedule.create({
+                data: {
+                    ...scheduleData,
                     eventId,
-                })),
+                },
             });
+
+            const scheduleId = createdSchedule.eventScheduleId;
+
+            // Insert ticket types for this schedule
+            if (Array.isArray(ticketTypes) && ticketTypes.length > 0) {
+                await prisma.dailyTicketTypeEntry.createMany({
+                    data: ticketTypes.map(ticket => ({
+                        ...ticket,
+                        eventScheduleId: scheduleId,
+                    })),
+                });
+            }
         }
 
         return NextResponse.json({
             success: true,
-            message: "Event, schedule, and ticket types created successfully",
-            eventId,
+            message: "Event, schedule, and ticket types created successfully"
         });
     } catch (error) {
         console.error("Error in creating a new Event:", error);

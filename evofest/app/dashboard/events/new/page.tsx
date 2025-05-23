@@ -26,6 +26,7 @@ import { useAppSelector } from '@/lib/hooks/hook';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { setLoading } from '@/lib/redux/slice/loadingSlice';
 
 // Combine Zod schemas for the full form
 const fullFormSchema = z.object({
@@ -145,7 +146,7 @@ const CreateEventForm: React.FC = () => {
 
   const handleSubmit = async (values: FormValues) => {
     try {
-      setUploading(true);
+      dispatch(setLoading(true));
       // Prepare data for backend
       const payload = {
         eventBody: {
@@ -178,6 +179,7 @@ const CreateEventForm: React.FC = () => {
 
         if (response.data.success) {
           toast.success('New Event is created successfully');
+          dispatch(setLoading(false));
           router.push('/events');
         } else {
           toast.error(response.data.message);
@@ -187,7 +189,7 @@ const CreateEventForm: React.FC = () => {
       console.error('Submission failed:', error);
       toast.error('Failed to create event.');
     } finally {
-      setUploading(false);
+       dispatch(setLoading(false));
     }
   };
 
@@ -952,7 +954,7 @@ const CreateEventForm: React.FC = () => {
                   ) : (
                     <div></div>
                   )}
-                  {currentStep < 4 ? (
+                  {currentStep < 5 ? (
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button
                         type="button"
@@ -975,6 +977,7 @@ const CreateEventForm: React.FC = () => {
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button
                         type="submit"
+                        onClick={() => handleSubmit(values)}
                         disabled={isSubmitting || uploading}
                         className="bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:from-purple-700 hover:to-pink-600 shadow-md hover:shadow-lg"
                       >
