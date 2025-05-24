@@ -90,6 +90,10 @@ export default function EventsPage() {
         fetchEvents();
     }, []);
 
+    const handleViewDetails = (eventId: string) => {
+      router.push(`/events/${eventId}`);
+    };
+
   // Filter events based on search and filters
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -363,6 +367,7 @@ export default function EventsPage() {
                           className="mt-4 w-full flex items-center justify-center rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:shadow-lg"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
+                          onClick={ () => handleViewDetails(event.eventId)}
                         >
                           View Details
                           <ArrowRightIcon className="ml-2 h-4 w-4" />
