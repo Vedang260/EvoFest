@@ -28,6 +28,9 @@ import { format, parseISO } from 'date-fns';
 import { useAppSelector } from '@/lib/hooks/hook';
 import Footer from '@/components/footer';
 import Navbar from '@/components/navbar';
+import { setLoading } from '@/lib/redux/slice/loadingSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { TicketLoader } from '@/components/ui/ticketLoader';
 
 // Types
 interface EventSchedule {
@@ -76,10 +79,11 @@ export default function EventDetailsPage() {
   const params = useParams();
   const eventId = params?.eventId as string;
   const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state: any) => state.loading.isLoading);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('description');
-  const [emblaRef, emblaApi] = EmblaCarousel({ loop: true }, [Autoplay({ delay: 3000 })]);
+  const [emblaRef, emblaApi] = EmblaCarousel({ loop: true }, [Autoplay({ delay: 5000 })]);
   const { token } = useAppSelector((state) => state.auth);
   // Fetch event details
  useEffect(() => {
@@ -87,7 +91,7 @@ export default function EventDetailsPage() {
 
     const fetchEvent = async () => {
       try {
-        setLoading(true);
+        dispatch(setLoading(true));
         const response = await axios.get<ApiResponse>(`/api/events/${eventId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -100,20 +104,12 @@ export default function EventDetailsPage() {
         setError('Failed to fetch event details');
         console.error(err);
       } finally {
-        setLoading(false);
+        dispatch(setLoading(false));
       }
     };
 
     fetchEvent();
   }, [eventId]);
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
 
   if (error || !event) {
     return (
@@ -132,6 +128,7 @@ export default function EventDetailsPage() {
     );
   }
 
+  if (isLoading) return <TicketLoader />;
   const CategoryIcon = categoryIcons[event.category as keyof typeof categoryIcons] || UsersIcon;
 
   return (
@@ -140,9 +137,10 @@ export default function EventDetailsPage() {
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
   {/* Media Carousel */}
   
+
   {/* Main Content Container */}
   <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
-    <section className="relative h-[60vh] w-full overflow-hidden bg-gray-900">
+    <section className="relative h-[40vh] sm:h-[50vh] lg:h-[60vh] w-full overflow-hidden bg-gray-900">
     {event.media.length > 0 && (
       <div className="absolute inset-0">
         <div className="h-full w-full" ref={emblaRef}>
@@ -155,9 +153,10 @@ export default function EventDetailsPage() {
                     muted
                     loop
                     playsInline
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-cover sm:object-contain"
+                    src={media}
+                    
                   >
-                    <source src={media} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                 ) : (
@@ -165,13 +164,13 @@ export default function EventDetailsPage() {
                     src={media}
                     alt={`Event media ${index + 1}`}
                     fill
-                    className="object-contain"
-                    quality={90}
+                    className="object-cover sm:object-contain"
+                    quality={85}
                     priority={index === 0}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 100vw"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 75vw, 1200px"
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
               </div>
             ))}
           </div>
@@ -179,142 +178,137 @@ export default function EventDetailsPage() {
       </div>
     )}
   </section>
-
-    {/* Event Header Card */}
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-md p-6 mb-8"
-    >
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Event Title and Category */}
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-4">
-            <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-600 text-xs font-medium text-white">
-              <CategoryIcon className="h-3 w-3 mr-1" />
-              {event.category.charAt(0) + event.category.slice(1).toLowerCase()}
-            </span>
-            <span className="text-sm text-purple-600">
-              {event.capacity.toLocaleString()} capacity
-            </span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-purple-900 mb-4">
-            {event.title}
-          </h1>
-          
-          {/* Venue Details - Prominent placement */}
-          <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-            <div className="flex items-start gap-3">
-              <MapPinIcon className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium text-purple-900 mb-1">Venue Location</h3>
-                <p className="text-gray-700">{event.venue}</p>
-                <button className="mt-2 text-sm text-purple-600 hover:text-purple-800 flex items-center">
-                  View on map <ArrowUpRightIcon className="ml-1 h-4 w-4" />
-                </button>
+    <div className="flex flex-col lg:flex-row gap-8">
+      {/* Event Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white rounded-xl shadow-md p-6 flex-1"
+      >
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Event Title and Category */}
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-600 text-xs font-medium text-white">
+                <CategoryIcon className="h-3 w-3 mr-1" />
+                {event.category.charAt(0) + event.category.slice(1).toLowerCase()}
+              </span>
+              <span className="text-sm text-purple-600">
+                {event.capacity.toLocaleString()} capacity
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-purple-900 mb-4">
+              {event.title}
+            </h1>
+            
+            {/* Venue Details */}
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+              <div className="flex items-start gap-3">
+                <MapPinIcon className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-medium text-purple-900 mb-1">Venue Location</h3>
+                  <p className="text-gray-700">{event.venue}</p>
+                  <button className="mt-2 text-sm text-purple-600 hover:text-purple-800 flex items-center">
+                    View on map <ArrowUpRightIcon className="ml-1 h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Content Grid */}
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Main Content Column */}
-      <div className="lg:col-span-2 space-y-8">
-        {/* Tabs Navigation */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white rounded-xl shadow-md overflow-hidden"
-        >
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab('description')}
-                className={`py-4 px-6 text-sm font-medium ${activeTab === 'description' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-              >
-                Description
-              </button>
-              <button
-                onClick={() => setActiveTab('schedule')}
-                className={`py-4 px-6 text-sm font-medium ${activeTab === 'schedule' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-              >
-                Schedule
-              </button>
-              <button
-                onClick={() => setActiveTab('prohibited')}
-                className={`py-4 px-6 text-sm font-medium ${activeTab === 'prohibited' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-              >
-                Prohibited Items
-              </button>
-              <button
-                onClick={() => setActiveTab('terms')}
-                className={`py-4 px-6 text-sm font-medium ${activeTab === 'terms' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-              >
-                Terms
-              </button>
-            </nav>
-          </div>
-          <div className="p-6">
-            {activeTab === 'description' && (
-              <div className="prose max-w-none text-gray-700">
-                {event.description.split('\n\n').map((paragraph, i) => (
-                  <p key={i} className="mb-4">{paragraph}</p>
-                ))}
+            {/* Tabs Navigation */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-white rounded-xl shadow-md overflow-hidden mt-8"
+            >
+              <div className="border-b border-gray-200">
+                <nav className="flex -mb-px">
+                  <button
+                    onClick={() => setActiveTab('description')}
+                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'description' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Description
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('schedule')}
+                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'schedule' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Schedule
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('prohibited')}
+                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'prohibited' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Prohibited Items
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('terms')}
+                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'terms' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Terms
+                  </button>
+                </nav>
               </div>
-            )}
-
-            {activeTab === 'schedule' && (
-              <div className="space-y-4">
-                {event.eventSchedule.map((schedule, i) => (
-                  <div key={i} className="p-4 bg-purple-50 rounded-lg border border-purple-100">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-shrink-0 bg-white p-2 rounded-lg shadow-sm">
-                        <CalendarIcon className="h-5 w-5 text-purple-600" />
+              <div className="p-6">
+                {activeTab === 'description' && (
+                  <div className="prose max-w-none text-gray-700">
+                    {event.description.split('\n\n').map((paragraph, i) => (
+                      <p key={i} className="mb-4">{paragraph}</p>
+                    ))}
+                  </div>
+                )}
+                {activeTab === 'schedule' && (
+                  <div className="space-y-4">
+                    {event.eventSchedule.map((schedule, i) => (
+                      <div key={i} className="p-4 bg-purple-50 rounded-lg border border-purple-100">
+                        <div className="flex items-center gap-4">
+                          <div className="flex-shrink-0 bg-white p-2 rounded-lg shadow-sm">
+                            <CalendarIcon className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-purple-900">
+                              {format(parseISO(schedule.date), 'EEEE, MMMM d, yyyy')}
+                            </h3>
+                            <p className="text-sm text-purple-600 mt-1">
+                              <ClockIcon className="inline h-4 w-4 mr-1" />
+                              {schedule.startTime} - {schedule.endTime}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium text-purple-900">
-                          {format(parseISO(schedule.date), 'EEEE, MMMM d, yyyy')}
-                        </h3>
-                        <p className="text-sm text-purple-600 mt-1">
-                          <ClockIcon className="inline h-4 w-4 mr-1" />
-                          {schedule.startTime} - {schedule.endTime}
-                        </p>
+                    ))}
+                  </div>
+                )}
+                {activeTab === 'prohibited' && (
+                  <div className="space-y-3">
+                    {event.prohibitedItems.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <AlertCircleIcon className="h-5 w-5 text-pink-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{item}</span>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'prohibited' && (
-              <div className="space-y-3">
-                {event.prohibitedItems.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <AlertCircleIcon className="h-5 w-5 text-pink-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
+                )}
+                {activeTab === 'terms' && (
+                  <div className="space-y-4">
+                    {event.termsAndConditions.map((term, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <FileTextIcon className="h-5 w-5 text-purple-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{term}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-
-            {activeTab === 'terms' && (
-              <div className="space-y-4">
-                {event.termsAndConditions.map((term, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <FileTextIcon className="h-5 w-5 text-purple-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">{term}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            </motion.div>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       {/* Right Sidebar Column */}
-      <div className="space-y-6">
+      <div className="lg:w-80 space-y-6">
         {/* Schedule Details Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -370,46 +364,6 @@ export default function EventDetailsPage() {
         </motion.div>
       </div>
     </div>
-        </div>
-
-        {/* Quick Facts Sidebar */}
-        {/* <div className="md:w-64 flex-shrink-0">
-          <div className="space-y-4">
-            <div className="flex items-start gap-2">
-              <CalendarIcon className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm text-gray-500">Date</p>
-                <p className="text-gray-700">
-                  {format(parseISO(event.startDate), 'MMM d, yyyy')}
-                  {format(parseISO(event.startDate), 'MMM d, yyyy') !== format(parseISO(event.endDate), 'MMM d, yyyy') &&
-                    ` - ${format(parseISO(event.endDate), 'MMM d, yyyy')}`}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <ClockIcon className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm text-gray-500">Time</p>
-                <p className="text-gray-700">
-                  {event.eventSchedule[0]?.startTime || 'TBA'} - {event.eventSchedule[0]?.endTime || 'TBA'}
-                </p>
-              </div>
-            </div>
-            <div className="pt-2">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700"
-              >
-                Get Tickets
-              </motion.button>
-            </div>
-          </div>
-        </div> */}
-      </div>
-    </motion.div>
-
-    
   </div>
 </div>
     <Footer />
