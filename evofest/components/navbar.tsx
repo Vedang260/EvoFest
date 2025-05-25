@@ -93,7 +93,7 @@ const Navbar = () => {
         return [
           {
             name: 'Your Bookings',
-            href: '/bookings',
+            href: '/bookings/attendee',
             icon: <Ticket size={18} className="text-primary-600" />,
           },
           {
