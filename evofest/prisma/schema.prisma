@@ -99,7 +99,6 @@ model Event {
   organizerId         String
   organizer           User      @relation("OrganizerEvents", fields: [organizerId], references: [userId], onDelete: Cascade, onUpdate: Cascade)
   checkIns            CheckIn[]
-  bookings            Booking[]
   eventSchedule            EventSchedule[]
 }
 
@@ -125,6 +124,7 @@ model DailyTicketTypeEntry{
   price                   Float
   quantity                Int
   createdAt               DateTime         @default(now())
+  bookings                Booking[]
 }
 
 model Payment {
@@ -143,17 +143,15 @@ model Payment {
 model Booking {
   bookingId          String     @id @default(cuid())
   attendeeId         String
-  eventId            String
+  dailyTicketTypeEntryId            String
   bookingDate        DateTime
-  ticketType         TicketType
   quantity           Int
   totalPrice         Float
   paymentId          String     
-  qrCode             String?    // store QR code URL or data
   createdAt          DateTime   @default(now())
 
   attendee           User       @relation(fields: [attendeeId], references: [userId], onDelete: Cascade)
-  event              Event      @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+  dailyTicketTypeEntry  DailyTicketTypeEntry  @relation(fields: [dailyTicketTypeEntryId], references: [dailyTicketTypeEntryId], onDelete: Cascade)
   payment            Payment    @relation(fields: [paymentId], references: [paymentId], onDelete: Cascade)
   guests             Guest[]
 }
@@ -164,9 +162,11 @@ model Guest {
   name            String
   gender          Gender
   age             Int
+  email           String
   phoneNumber     String
   booking         Booking  @relation(fields: [bookingId], references: [bookingId], onDelete: Cascade)
   checkIns        CheckIn[]
+  qrCode          String?    // store QR code URL or data
 }
 
 model CheckIn {

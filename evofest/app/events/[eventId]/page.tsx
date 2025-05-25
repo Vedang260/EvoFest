@@ -112,20 +112,7 @@ export default function EventDetailsPage() {
   }, [eventId]);
 
   if (error || !event) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center justify-center">
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 max-w-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircleIcon className="h-5 w-5 text-red-500" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <TicketLoader />;
   }
 
   if (isLoading) return <TicketLoader />;
