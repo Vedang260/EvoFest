@@ -3,106 +3,137 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import QRCode from 'qrcode';
-
-export const config = {
-  api: { bodyParser: false }
-};
+import nodemailer from 'nodemailer';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-04-30.basil' });
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const endpointSecret = process.env.WEBHOOK_SECRET_KEY!;
 const prisma = new PrismaClient();
+
+// Initialize email transporter once (better to move to separate config file)
+const transporter = nodemailer.createTransport({
+  service: 'Gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 export async function POST(req: Request) {
   const rawBody = await req.arrayBuffer();
   const body = Buffer.from(rawBody);
   const sig = (await headers()).get('stripe-signature');
 
-  let event: Stripe.Event;
-
   try {
-    event = stripe.webhooks.constructEvent(body, sig!, endpointSecret);
+    const event = stripe.webhooks.constructEvent(body, sig!, endpointSecret);
+
+    if (event.type === 'checkout.session.completed') {
+      return await handleSuccessfulCheckout(event);
+    }
+
+    return NextResponse.json({ received: true });
   } catch (err: any) {
-    console.error('❌ Invalid signature:', err.message);
-    return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+    console.error('❌ Webhook error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  }
+}
+
+async function handleSuccessfulCheckout(event: Stripe.Event) {
+  const session = event.data.object as Stripe.Checkout.Session;
+  const metadata = session.metadata;
+
+  if (!metadata?.attendeeId || !metadata?.paymentId) {
+    throw new Error("Missing required metadata");
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const metadata = session.metadata;
+  const { attendeeId, paymentId } = metadata;
+  const tickets = metadata.tickets ? JSON.parse(metadata.tickets) : [];
+  const guests = metadata.guests ? JSON.parse(metadata.guests) : [];
 
-    try {
-      const attendeeId = metadata?.attendeeId;
-      const paymentId = metadata?.paymentId;
-        if (!attendeeId || !paymentId) {
-            throw new Error("attendeeId or paymentId is missing");
-        }
-      let tickets, guests;
-      if(metadata?.tickets){
-        tickets = JSON.parse(metadata?.tickets);
-      }
-      if(metadata?.guests){
-        guests = JSON.parse(metadata?.guests);
-      }
+  return await prisma.$transaction(async (prisma) => {
+    // 1. Update payment status
+    await prisma.payment.update({
+      where: { paymentId },
+      data: { status: 'COMPLETED', paidDate: new Date() }
+    });
 
-      // 1. Mark payment as successful
-      await prisma.payment.update({
-        where: { paymentId },
-        data: {
-          status: 'COMPLETED',
-          paidDate: new Date()
-        }
-      });
-
-      // 2. Create bookings and a map for ticketEntryId -> bookingId
-      const bookingMap: Record<string, string> = {};
-
-      for (const ticket of tickets) {
-        const booking = await prisma.booking.create({
+    // 2. Create all bookings first (returns array of created bookings)
+    const bookings = await Promise.all(
+      tickets.map((ticket: any) =>
+        prisma.booking.create({
           data: {
-            attendeeId: attendeeId,
-            paymentId: paymentId,
+            attendeeId,
+            paymentId,
             dailyTicketTypeEntryId: ticket.dailyTicketTypeEntryId,
             quantity: ticket.quantity,
             totalPrice: ticket.totalPrice
           }
-        });
+        })
+      )
+    );
 
-        bookingMap[ticket.dailyTicketTypeEntryId] = booking.bookingId;
-      }
+    // Create mapping for quick lookup
+    const bookingMap = Object.fromEntries(
+      bookings.map(b => [b.dailyTicketTypeEntryId, b.bookingId])
+    );
 
-      // 3. Create guests and generate QR code for each
-      for (const guest of guests) {
-        const bookingId = bookingMap[guest.dailyTicketTypeEntryId];
+    // 3. Process all guests with QR codes
+    const guestProcessing = guests.map(async (guest: any) => {
+      const bookingId = bookingMap[guest.dailyTicketTypeEntryId];
+      if (!bookingId) throw new Error(`No booking found for ticket ${guest.dailyTicketTypeEntryId}`);
 
-        const guestRecord = await prisma.guest.create({
-          data: {
-            bookingId,
-            name: guest.name,
-            age: parseInt(guest.age),
-            gender: guest.gender,
-            email: guest.email,
-            phoneNumber: guest.phone,
-            qrCode: '' // placeholder
-          }
-        });
+      // Generate QR code first to include in create operation
+      const qrData = `evofest:${attendeeId}:${guest.email}`;
+      const qrCodeURL = await QRCode.toDataURL(qrData);
 
-        // Generate QR Code containing guestId or any identifying info
-        const qrData = `guest:${guestRecord.guestId}`;
-        const qrCodeURL = await QRCode.toDataURL(qrData);
+      // Create guest with QR code in single operation
+      const guestRecord = await prisma.guest.create({
+        data: {
+          booking: { connect: { bookingId } },
+          name: guest.name,
+          age: parseInt(guest.age),
+          gender: guest.gender,
+          email: guest.email,
+          phoneNumber: guest.phone,
+          qrCode: qrCodeURL // No need for separate update
+        }
+      });
 
-        // Update guest with QR code
-        await prisma.guest.update({
-          where: { guestId: guestRecord.guestId },
-          data: { qrCode: qrCodeURL }
-        });
-      }
+      // Send email (don't await, run in background)
+      transporter.sendMail({
+        from: '"EvoFest" <tickets@evofest.com>',
+        to: guest.email,
+        subject: 'Your EvoFest Ticket',
+        html: generateEmailTemplate(guest.name, qrCodeURL),
+        attachments: [{
+          filename: 'ticket-qr.png',
+          content: qrCodeURL.split('base64,')[1],
+          encoding: 'base64'
+        }]
+      }).catch(e => console.error('Email failed:', e));
 
-      return NextResponse.json({ success: true, message: 'Your tickets are booked' });
-    } catch (err: any) {
-      console.error('❌ Webhook handler error:', err.message);
-      return NextResponse.json({ error: 'Internal error' }, { status: 500 });
-    }
-  }
+      return guestRecord;
+    });
 
-  return NextResponse.json({ received: true });
+    await Promise.all(guestProcessing);
+    return NextResponse.json({ success: true });
+  });
 }
+
+function generateEmailTemplate(name: string, qrCodeURL: string) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #4f46e5;">Hello ${name},</h2>
+      <p>Your EvoFest ticket is attached!</p>
+      <p>Present this QR code at the entrance:</p>
+      <img src="${qrCodeURL}" alt="QR Code" style="display: block; margin: 20px auto; width: 200px;"/>
+      <p>For any questions, contact support@evofest.com</p>
+      <p style="margin-top: 30px; font-size: 0.9em; color: #666;">
+        EvoFest Team
+      </p>
+    </div>
+  `;
+}
+
+export const config = {
+  api: { bodyParser: false }
+};

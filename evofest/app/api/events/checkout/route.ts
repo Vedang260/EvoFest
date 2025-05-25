@@ -74,14 +74,14 @@ export async function POST(req: Request) {
                     gender: any;
                     phone: any;
                     email: any;
-                    dailyTicketTypeEntry: any;
+                    ticketTypeEntryId: any;
                 }) => ({
                     name: guest.name,
                     age: guest.age,
                     gender: guest.gender,
                     phone: guest.phone,
                     email: guest.email,
-                    dailyTicketTypeEntryId: guest.dailyTicketTypeEntry
+                    dailyTicketTypeEntryId: guest.ticketTypeEntryId
                 }))
             ),
         },

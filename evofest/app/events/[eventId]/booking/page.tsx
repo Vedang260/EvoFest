@@ -188,7 +188,7 @@ export default function TicketBookingPage() {
         guests: guestInfo.map(guest => ({
           name: guest.name,
           age: guest.age,
-          gender: guest.gender,
+          gender: guest.gender.toUpperCase(),
           phone: guest.phone,
           email: guest.email,
           ticketTypeEntryId: guest.ticketTypeEntryId
