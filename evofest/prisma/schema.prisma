@@ -144,7 +144,6 @@ model Booking {
   bookingId          String     @id @default(cuid())
   attendeeId         String
   dailyTicketTypeEntryId            String
-  bookingDate        DateTime
   quantity           Int
   totalPrice         Float
   paymentId          String     

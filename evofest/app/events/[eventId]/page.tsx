@@ -31,6 +31,7 @@ import Navbar from '@/components/navbar';
 import { setLoading } from '@/lib/redux/slice/loadingSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { TicketLoader } from '@/components/ui/ticketLoader';
+import { useRouter } from 'next/navigation';
 
 // Types
 interface EventSchedule {
@@ -85,6 +86,7 @@ export default function EventDetailsPage() {
   const [activeTab, setActiveTab] = useState('description');
   const [emblaRef, emblaApi] = EmblaCarousel({ loop: true }, [Autoplay({ delay: 5000 })]);
   const { token } = useAppSelector((state) => state.auth);
+  const router = useRouter();
   // Fetch event details
  useEffect(() => {
     if (!eventId) return;
@@ -113,6 +115,10 @@ export default function EventDetailsPage() {
 
   if (error || !event) {
     return <TicketLoader />;
+  }
+
+  const handleBooking = (eventId: string) => {
+    router.push(`/events/${eventId}/booking`);
   }
 
   if (isLoading) return <TicketLoader />;
@@ -341,6 +347,7 @@ export default function EventDetailsPage() {
             </div>
           </div>
           <motion.button
+            onClick={() => handleBooking(event.eventId)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-white text-purple-700 hover:bg-gray-100 font-medium rounded-lg px-6 py-3 shadow-md flex items-center justify-center gap-2"
