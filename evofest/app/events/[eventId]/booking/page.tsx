@@ -22,7 +22,7 @@ import { TicketLoader } from '@/components/ui/ticketLoader';
 import { useAppSelector } from '@/lib/hooks/hook';
 import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
-
+import { useRouter } from 'next/navigation';
 // Types
 interface DailyTicketTypeEntry {
   dailyTicketTypeEntryId: string;
@@ -74,6 +74,7 @@ export default function TicketBookingPage() {
   const [guestInfo, setGuestInfo] = useState<GuestInfo[]>([]);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const { token } = useAppSelector((state) => state.auth);
+  const router = useRouter();
 
   // Fetch event schedules
   useEffect(() => {
@@ -178,6 +179,7 @@ export default function TicketBookingPage() {
           .map(([type, quantity]) => {
             const ticket = selectedSchedule.dailyTickets.find(t => t.type === type);
             return {
+              type: ticket?.type,
               dailyTicketTypeEntryId: ticket?.dailyTicketTypeEntryId,
               quantity,
               totalPrice: ticket ? ticket.price * quantity : 0 // Calculate totalPrice per ticket type
@@ -193,8 +195,15 @@ export default function TicketBookingPage() {
         }))
       };
       console.log('bookingData: ', bookingData);
-      const response = await axios.post('/api/bookings', bookingData);
-      console.log('Booking successful:', response.data);
+      const response = await axios.post('/api/events/checkout', bookingData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if(response.data.success){
+        router.push(`${response.data.url}`);
+      }
       // Handle successful booking (redirect to confirmation, etc.)
     } catch (err) {
       console.error('Booking failed:', err);

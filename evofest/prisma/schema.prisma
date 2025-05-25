@@ -130,7 +130,7 @@ model DailyTicketTypeEntry{
 model Payment {
   paymentId      String         @id @default(cuid())
   attendeeId     String
-  transactionId  String
+  transactionId  String?         
   amount         Float
   status         PaymentStatus  @default(PENDING)
   paidDate       DateTime
