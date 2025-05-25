@@ -14,7 +14,8 @@ import {
   MicIcon,
   UsersIcon,
   TicketIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  CheckIcon
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,6 +68,7 @@ export default function EventsPage() {
     const [emblaRef, emblaApi] = EmblaCarousel({ loop: true }, [Autoplay({ delay: 3000 })]);
     const router = useRouter();
     const { token } = useAppSelector((state) => state.auth);
+    const { user, isAuthenticated } = useAppSelector((state) => state.auth);
     // Fetch events from API
     useEffect(() => {
         const fetchEvents = async () => {
@@ -92,6 +94,10 @@ export default function EventsPage() {
 
     const handleViewDetails = (eventId: string) => {
       router.push(`/events/${eventId}`);
+    };
+
+    const handleCheckIn = (eventId:string) => {
+      router.push(`/check-in/${eventId}`);
     };
 
   // Filter events based on search and filters
@@ -363,15 +369,30 @@ export default function EventsPage() {
                           </div>
                         </div>
 
+                        {user?.role === 'ATTENDEE' && (
                         <motion.button
                           className="mt-4 w-full flex items-center justify-center rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:shadow-lg"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={ () => handleViewDetails(event.eventId)}
+                          onClick={() => handleViewDetails(event.eventId)}
                         >
-                          View Details
-                          <ArrowRightIcon className="ml-2 h-4 w-4" />
-                        </motion.button>
+                            View Details
+                            <ArrowRightIcon className="ml-2 h-4 w-4" />
+                          </motion.button>
+                        )}
+
+                        {user?.role === 'STAFF' && (
+                          <motion.button
+                            className="mt-4 w-full flex items-center justify-center rounded-lg bg-gradient-to-r from-green-600 to-blue-500 px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:shadow-lg"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleCheckIn(event.eventId)} // you should define this function
+                          >
+                            Check In
+                            <CheckIcon className="ml-2 h-4 w-4" /> {/* Use any appropriate icon */}
+                          </motion.button>
+                        )}
+
                       </div>
                     </motion.div>
                   );

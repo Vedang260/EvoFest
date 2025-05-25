@@ -15,7 +15,8 @@ import {
   Film,
   Users,
   Mic,
-  Gamepad2
+  Gamepad2,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
@@ -252,58 +253,83 @@ export default function BookingsPage() {
 
       {/* QR Code Modal */}
       <AnimatePresence>
-        {selectedQr && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative"
-            >
-              <button
-                onClick={() => setSelectedQr(null)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-6 w-6" />
-              </button>
-              
-              <h3 className="text-xl font-bold text-purple-900 mb-4">Your Ticket QR Code</h3>
-              
-              <div className="flex flex-col items-center">
-                {/* QR Code Container with Theme Styling */}
-                <div className="p-4 bg-white rounded-lg border-2 border-purple-200 mb-4">
-                  <img 
-                    src={selectedQr} 
-                    alt="QR Code" 
-                    className="w-64 h-64 object-contain"
-                  />
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">
-                    Scan this QR code at the event entrance
-                  </p>
-                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-sm font-medium">
-                    <Ticket className="h-4 w-4 mr-1" />
-                    Valid Ticket
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-purple-100">
-                <p className="text-sm text-gray-500 text-center">
-                  Please bring a valid ID matching your booking details
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+  {selectedQr && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-purple-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-2xl max-w-md w-full p-8 relative border-2 border-purple-200"
+      >
+        <button
+          onClick={() => setSelectedQr(null)}
+          className="absolute top-4 right-4 text-purple-500 hover:text-purple-700 transition-colors"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent mb-2">
+            Your Event Ticket
+          </h3>
+          <p className="text-purple-700/80 text-sm">Present this QR code for entry</p>
+        </div>
+        
+        <div className="flex flex-col items-center">
+          {/* QR Code Container with Glow Effect */}
+          <div className="p-6 bg-white rounded-xl border-2 border-purple-300 mb-6 shadow-lg relative overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-pink-300/30"></div>
+            <div className="absolute -bottom-4 -right-4 w-8 h-8 rounded-full bg-purple-300/30"></div>
+            
+            <img 
+              src={selectedQr} 
+              alt="QR Code" 
+              className="w-64 h-64 object-contain"
+            />
+            
+            {/* Animated border effect */}
+            <motion.div 
+              className="absolute inset-0 border-2 border-transparent rounded-xl pointer-events-none"
+              animate={{
+                borderColor: ['rgba(168, 85, 247, 0)', 'rgba(236, 72, 153, 0.3)', 'rgba(168, 85, 247, 0)']
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+          </div>
+          
+          <div className="text-center">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 text-sm font-medium mb-3 border border-purple-200 shadow-sm">
+              <Ticket className="h-5 w-5 mr-2 text-pink-500" />
+              <span className="font-semibold">VIP Event Access</span>
+            </div>
+            <p className="text-purple-700/70 text-xs max-w-xs">
+              This QR code contains your unique ticket information. Keep it secure.
+            </p>
+          </div>
+        </div>
+        
+        <div className="mt-8 pt-6 border-t border-purple-200/50">
+          <div className="flex items-center justify-center space-x-2">
+            <ShieldCheck className="h-4 w-4 text-purple-500" />
+            <p className="text-xs text-purple-700/60 text-center">
+              Verified ticket • Non-transferable • ID required
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
         </div>
         <Footer />
     </>
