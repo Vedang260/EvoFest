@@ -1,7 +1,8 @@
 import { authMiddleware } from '@/lib/middleware/authMiddleware';
+import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-
+const prisma = new PrismaClient();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-04-30.basil',
 });
@@ -85,8 +86,8 @@ export async function POST(req: Request) {
             ),
         },
 
-        success_url: `${process.env.FRONTEND_STRIPE_SECRET_KEY}/payment/success`,
-        cancel_url: `${process.env.FRONTEND_STRIPE_SECRET_KEY}/payment/cancel`,
+        success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success/${payment.paymentId}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/cancel`,
     });
 
     await prisma?.payment.update({
