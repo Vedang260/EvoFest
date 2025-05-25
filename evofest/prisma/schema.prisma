@@ -17,6 +17,7 @@ enum UserRole {
   ORGANIZER
   ATTENDEE
   STAFF
+  ADMIN
 }
 
 enum EventStatus {
