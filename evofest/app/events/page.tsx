@@ -15,7 +15,8 @@ import {
   UsersIcon,
   TicketIcon,
   ArrowRightIcon,
-  CheckIcon
+  CheckIcon,
+  CookingPotIcon
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,7 +55,8 @@ const categories = [
   { name: 'GAMING', icon: GamepadIcon },
   { name: 'COMEDY', icon: MicIcon },
   { name: 'THEATER', icon: FilmIcon },
-  { name: 'FOOD', icon: UsersIcon },
+  { name: 'FOOD', icon: CookingPotIcon },
+  { name: 'FESTIVAL', icon: CookingPotIcon },
 ];
 
 export default function EventsPage() {

@@ -19,8 +19,10 @@ export default function RegistrationSuccess() {
   }, [router]);
 
   return (
+    <>
+      <Navbar />
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center justify-center p-4">
-        <Navbar />
+        
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -38,7 +40,8 @@ export default function RegistrationSuccess() {
         </p>
         <p className="text-gray-500 text-sm mt-4">Redirecting to login in 5 seconds...</p>
       </motion.div>
-        <Footer />
     </div>
+    <Footer />
+    </>
   );
 }
