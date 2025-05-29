@@ -81,10 +81,6 @@ async function handleSuccessfulCheckout(event: Stripe.Event) {
       const bookingId = bookingMap[guest.dailyTicketTypeEntryId];
       if (!bookingId) throw new Error(`No booking found for ticket ${guest.dailyTicketTypeEntryId}`);
 
-      // Generate QR code first to include in create operation
-      const qrData = `evofest:${attendeeId}:${guest.email}`;
-      const qrCodeURL = await QRCode.toDataURL(qrData);
-
       // Create guest with QR code in single operation
       const guestRecord = await prisma.guest.create({
         data: {
@@ -94,8 +90,17 @@ async function handleSuccessfulCheckout(event: Stripe.Event) {
           gender: guest.gender,
           email: guest.email,
           phoneNumber: guest.phone,
-          qrCode: qrCodeURL // No need for separate update
         }
+      });
+
+      // Step 2: Generate QR code using guestId
+      const qrData = `evofest:${guestRecord.guestId}:${guest.email}`;
+      const qrCodeURL = await QRCode.toDataURL(qrData);
+
+      // Step 3: Update the guest with the generated QR code
+      await prisma.guest.update({
+        where: { guestId: guestRecord.guestId },
+        data: { qrCode: qrCodeURL }
       });
 
       // Send email (don't await, run in background)
