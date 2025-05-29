@@ -22,6 +22,7 @@ import { useAppSelector } from '@/lib/hooks/hook';
 import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
 import jsQR from 'jsqr';
+import toast from 'react-hot-toast';
 
 // Types
 interface Guest {
@@ -231,8 +232,8 @@ export default function EventCheckInPage() {
     
     try {
       setCheckingIn(true);
-      await axios.post(`/api/events/${eventId}/check-in`, {
-        guestId: selectedGuest.guestId
+      const response = await axios.post(`/api/events/${eventId}/check-in`, {
+        guest: { guestId: selectedGuest.guestId }
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -240,16 +241,19 @@ export default function EventCheckInPage() {
         }
       });
       
-      // Update local state
-      setGuests(prevGuests => 
-        prevGuests.map(g => 
-          g.guestId === selectedGuest.guestId 
-            ? { ...g, checkedIn: true, checkedInAt: new Date().toISOString() } 
-            : g
-        )
-      );
-      
-      setSelectedGuest(null);
+      if(response.data.success){
+        toast.success(response.data.message);
+        // Update local state
+        setGuests(prevGuests => 
+          prevGuests.map(g => 
+            g.guestId === selectedGuest.guestId 
+              ? { ...g, checkedIn: true, checkedInAt: new Date().toISOString() } 
+              : g
+          )
+        );
+        
+        setSelectedGuest(null);
+      }
     } catch (err) {
       console.error('Check-in failed:', err);
       setError('Check-in failed. Please try again.');
