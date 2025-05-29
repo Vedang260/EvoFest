@@ -21,6 +21,7 @@ import { useDispatch } from 'react-redux';
 import { useAppSelector } from '@/lib/hooks/hook';
 import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
+import jsQR from 'jsqr';
 
 // Types
 interface Guest {
@@ -56,7 +57,9 @@ export default function EventCheckInPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const dispatch = useDispatch();
   const { token } = useAppSelector((state) => state.auth);
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const guestsPerPage = 5;
+
   // Mock event data since it's not in the backend response
   const [event, setEvent] = useState({
     title: 'Event Title',
@@ -108,6 +111,14 @@ export default function EventCheckInPage() {
     guest?.phoneNumber.includes(searchTerm)
   );
 
+  // Get current guests for pagination
+  const indexOfLastGuest = currentPage * guestsPerPage;
+  const indexOfFirstGuest = indexOfLastGuest - guestsPerPage;
+  const currentGuests = filteredGuests.slice(indexOfFirstGuest, indexOfLastGuest);
+
+  // Change page
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
   // Handle QR scan button click
   const handleScanClick = () => {
     setQrScannerOpen(true);
@@ -134,56 +145,73 @@ export default function EventCheckInPage() {
 
   // Scan for QR codes
   const scanQRCode = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+  if (!videoRef.current || !canvasRef.current) return;
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+  const video = videoRef.current;
+  const canvas = canvasRef.current;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
 
-    const scan = () => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.height = video.videoHeight;
-        canvas.width = video.videoWidth;
-        context?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const imageData = context?.getImageData(0, 0, canvas.width, canvas.height);
-        if (imageData) {
-          try {
-            // In a real app, you would use a QR code library like jsQR
-            // const code = jsQR(imageData.data, imageData.width, imageData.height);
-            // if (code) {
-            //   handleScannedQR(code.data);
-            //   return;
-            // }
-            
-            // For demo purposes, we'll simulate finding a QR code after 2 seconds
-            if (process.env.NODE_ENV === 'development') {
-              setTimeout(() => {
-                handleScannedQR(guests[0]?.guestId || '');
-              }, 2000);
-            }
-          } catch (err) {
-            console.error('QR scanning error:', err);
+  // Set a timeout to stop scanning after 5 seconds
+  const timeoutId = setTimeout(() => {
+    if (!selectedGuest) {
+      stopScanner();
+      setQrScannerOpen(false);
+      setError('No QR code detected. Please try again.');
+    }
+  }, 15000);
+
+  const scan = () => {
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+      context?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageData = context?.getImageData(0, 0, canvas.width, canvas.height);
+      if (imageData) {
+        try {
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code) {
+            handleScannedQR(code.data);
+            clearTimeout(timeoutId);
+            return;
           }
+        } catch (err) {
+          console.error('QR scanning error:', err);
         }
       }
-      requestAnimationFrame(scan);
-    };
-    
-    scan();
+    }
+    requestAnimationFrame(scan);
   };
+  
+  scan();
+
+  // Clean up the timeout when component unmounts or scanner stops
+  return () => clearTimeout(timeoutId);
+};
 
   // Handle scanned QR code
-  const handleScannedQR = (guestId: string) => {
-    stopScanner();
-    setQrScannerOpen(false);
-    
-    const guest = guests.find(g => g.guestId === guestId);
-    if (guest) {
-      setSelectedGuest(guest);
-    } else {
-      setError('Guest not found. Please try again or search manually.');
-    }
+  const handleScannedQR = (qrData: string) => {
+  stopScanner();
+  setQrScannerOpen(false);
+
+  // Parse the QR data to extract guestId
+  let guestId = qrData;
+
+  // If the QR code follows the "evofest:" format, extract the guestId
+  if (qrData.startsWith('evofest:')) {
+  const parts = qrData.split(':');
+  if (parts.length >= 2) {
+  guestId = parts[1]; // The part between the first and second colon
+  }
+  }
+
+  const guest = guests.find(g => g.guestId === guestId);
+
+  if (guest) {
+  setSelectedGuest(guest);
+  } else {
+  setError('Guest not found. Please try again or search manually.');
+  }
   };
 
   // Stop scanner
@@ -348,12 +376,12 @@ export default function EventCheckInPage() {
             Guests ({filteredGuests.length})
           </h2>
           
-          {filteredGuests.length === 0 ? (
+          {currentGuests.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-6 text-center">
               <p className="text-gray-500">No guests found matching your search</p>
             </div>
           ) : (
-            filteredGuests.map(guest => (
+            currentGuests.map(guest => (
               <motion.div
                 key={guest.guestId}
                 initial={{ opacity: 0, y: 20 }}
@@ -390,7 +418,47 @@ export default function EventCheckInPage() {
               </motion.div>
             ))
           )}
+
+          
         </motion.div>
+
+        {filteredGuests.length > guestsPerPage && (
+  <div className="flex justify-center mt-6">
+    <nav className="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+      <button
+        onClick={() => paginate(currentPage > 1 ? currentPage - 1 : 1)}
+        disabled={currentPage === 1}
+        className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-purple-300 bg-white text-sm font-medium ${currentPage === 1 ? 'text-purple-200 cursor-not-allowed' : 'text-purple-600 hover:bg-purple-50'}`}
+      >
+        <span className="sr-only">Previous</span>
+        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+      </button>
+      
+      {Array.from({ length: Math.ceil(filteredGuests.length / guestsPerPage) }).map((_, index) => (
+        <button
+          key={index}
+          onClick={() => paginate(index + 1)}
+          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === index + 1 ? 'z-10 bg-purple-600 border-purple-600 text-white' : 'bg-white border-purple-300 text-purple-600 hover:bg-purple-50'}`}
+        >
+          {index + 1}
+        </button>
+      ))}
+      
+      <button
+        onClick={() => paginate(currentPage < Math.ceil(filteredGuests.length / guestsPerPage) ? currentPage + 1 : currentPage)}
+        disabled={currentPage === Math.ceil(filteredGuests.length / guestsPerPage)}
+        className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-purple-300 bg-white text-sm font-medium ${currentPage === Math.ceil(filteredGuests.length / guestsPerPage) ? 'text-purple-200 cursor-not-allowed' : 'text-purple-600 hover:bg-purple-50'}`}
+      >
+        <span className="sr-only">Next</span>
+        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+        </svg>
+      </button>
+    </nav>
+  </div>
+)}
       </div>
 
       {/* Selected Guest Check-In Panel */}

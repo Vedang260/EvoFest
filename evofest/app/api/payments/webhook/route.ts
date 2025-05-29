@@ -49,14 +49,14 @@ async function handleSuccessfulCheckout(event: Stripe.Event) {
   const tickets = metadata.tickets ? JSON.parse(metadata.tickets) : [];
   const guests = metadata.guests ? JSON.parse(metadata.guests) : [];
 
-  return await prisma.$transaction(async (prisma) => {
-    // 1. Update payment status
+  // Step 1: DB operations only (within transaction)
+  const guestRecords = await prisma.$transaction(async (prisma) => {
+    // Update payment
     await prisma.payment.update({
       where: { paymentId },
       data: { status: 'COMPLETED', paidDate: new Date() }
     });
 
-    // 2. Create all bookings first (returns array of created bookings)
     const bookings = await Promise.all(
       tickets.map((ticket: any) =>
         prisma.booking.create({
@@ -71,39 +71,43 @@ async function handleSuccessfulCheckout(event: Stripe.Event) {
       )
     );
 
-    // Create mapping for quick lookup
     const bookingMap = Object.fromEntries(
       bookings.map(b => [b.dailyTicketTypeEntryId, b.bookingId])
     );
 
-    // 3. Process all guests with QR codes
-    const guestProcessing = guests.map(async (guest: any) => {
-      const bookingId = bookingMap[guest.dailyTicketTypeEntryId];
-      if (!bookingId) throw new Error(`No booking found for ticket ${guest.dailyTicketTypeEntryId}`);
+    // Create all guests (no QR codes yet)
+    return await Promise.all(
+      guests.map((guest: any) => {
+        const bookingId = bookingMap[guest.dailyTicketTypeEntryId];
+        if (!bookingId) throw new Error(`No booking found for ticket ${guest.dailyTicketTypeEntryId}`);
 
-      // Create guest with QR code in single operation
-      const guestRecord = await prisma.guest.create({
-        data: {
-          booking: { connect: { bookingId } },
-          name: guest.name,
-          age: parseInt(guest.age),
-          gender: guest.gender,
-          email: guest.email,
-          phoneNumber: guest.phone,
-        }
-      });
+        return prisma.guest.create({
+          data: {
+            booking: { connect: { bookingId } },
+            name: guest.name,
+            age: parseInt(guest.age),
+            gender: guest.gender,
+            email: guest.email,
+            phoneNumber: guest.phone
+          }
+        });
+      })
+    );
+  });
 
-      // Step 2: Generate QR code using guestId
-      const qrData = `evofest:${guestRecord.guestId}:${guest.email}`;
+  // Process QR generation and email (not in transaction)
+  await Promise.all(
+    guestRecords.map(async (guest) => {
+      const qrData = `evofest:${guest.guestId}:${guest.email}`;
       const qrCodeURL = await QRCode.toDataURL(qrData);
 
-      // Step 3: Update the guest with the generated QR code
+      // Update guest with QR code
       await prisma.guest.update({
-        where: { guestId: guestRecord.guestId },
+        where: { guestId: guest.guestId },
         data: { qrCode: qrCodeURL }
       });
 
-      // Send email (don't await, run in background)
+      // Send email
       transporter.sendMail({
         from: '"EvoFest" <tickets@evofest.com>',
         to: guest.email,
@@ -115,13 +119,10 @@ async function handleSuccessfulCheckout(event: Stripe.Event) {
           encoding: 'base64'
         }]
       }).catch(e => console.error('Email failed:', e));
+    })
+  );
 
-      return guestRecord;
-    });
-
-    await Promise.all(guestProcessing);
-    return NextResponse.json({ success: true });
-  });
+  return NextResponse.json({ success: true });
 }
 
 function generateEmailTemplate(name: string, qrCodeURL: string) {
