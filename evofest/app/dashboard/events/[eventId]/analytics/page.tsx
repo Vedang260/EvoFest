@@ -236,7 +236,6 @@ export default function EventAnalyticsPage() {
                 </nav>
               </div>
               <div className="p-6">
-                // In your EventAnalyticsPage.tsx, replace the overview tab content with:
                 {activeTab === 'overview' && <OverviewTab eventId={eventId} />}
                 
               </div>

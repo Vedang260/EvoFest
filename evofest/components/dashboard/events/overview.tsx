@@ -60,7 +60,7 @@ interface ApiResponse {
 }
 
 // Color palette matching your theme
-const COLORS = ['#8B5CF6', '#EC4899', '#6366F1', '#10B981', '#F59E0B'];
+const COLORS = ['#cd7afa', '#EC4899', '#e5d0f5', '#10B981', '#F59E0B'];
 
 const statCardVariants = {
   hidden: { opacity: 0, y: 20 },
