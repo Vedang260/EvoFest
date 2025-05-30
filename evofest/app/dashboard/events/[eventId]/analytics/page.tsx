@@ -33,6 +33,7 @@ import { setLoading } from '@/lib/redux/slice/loadingSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { TicketLoader } from '@/components/ui/ticketLoader';
 import { useRouter } from 'next/navigation';
+import OverviewTab from '@/components/dashboard/events/overview';
 
 // Types
 interface EventSchedule {
@@ -235,55 +236,9 @@ export default function EventAnalyticsPage() {
                 </nav>
               </div>
               <div className="p-6">
-                {activeTab === 'overview' && (
-                  <div className="prose max-w-none text-gray-700">
-                    {event.description.split('\n\n').map((paragraph, i) => (
-                      <p key={i} className="mb-4">{paragraph}</p>
-                    ))}
-                  </div>
-                )}
-                {activeTab === 'schedule' && (
-                  <div className="space-y-4">
-                    {event.eventSchedule.map((schedule, i) => (
-                      <div key={i} className="p-4 bg-purple-50 rounded-lg border border-purple-100">
-                        <div className="flex items-center gap-4">
-                          <div className="flex-shrink-0 bg-white p-2 rounded-lg shadow-sm">
-                            <CalendarIcon className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-purple-900">
-                              {format(parseISO(schedule.date), 'EEEE, MMMM d, yyyy')}
-                            </h3>
-                            <p className="text-sm text-purple-600 mt-1">
-                              <ClockIcon className="inline h-4 w-4 mr-1" />
-                              {schedule.startTime} - {schedule.endTime}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {activeTab === 'prohibited' && (
-                  <div className="space-y-3">
-                    {event.prohibitedItems.map((item, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <AlertCircleIcon className="h-5 w-5 text-pink-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {activeTab === 'terms' && (
-                  <div className="space-y-4">
-                    {event.termsAndConditions.map((term, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <FileTextIcon className="h-5 w-5 text-purple-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{term}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                // In your EventAnalyticsPage.tsx, replace the overview tab content with:
+                {activeTab === 'overview' && <OverviewTab eventId={eventId} />}
+                
               </div>
             </motion.div>
           </div>
