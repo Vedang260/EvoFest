@@ -55,6 +55,7 @@ interface DailyTicketTypeEntry {
 }
 
 interface Booking {
+  paymentId: string;
   bookingId: string;
   quantity: number;
   totalPrice: number;

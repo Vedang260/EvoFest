@@ -4,7 +4,7 @@ import { authMiddleware } from "@/lib/middleware/authMiddleware";
 
 const prisma = new PrismaClient();
 
-// GET /api/bookings/attendee/[attendeeId] - Fetch the bookings done by Attendee
+// GET /api/bookings/attendee - Fetch the bookings done by Attendee
 export async function GET( request: Request) {
     try {
         const user = await authMiddleware(request, ['ATTENDEE']);
