@@ -77,7 +77,7 @@ const categoryIcons = {
   FOOD: UsersIcon,
 };
 
-export default function EventDetailsPage() {
+export default function EventAnalyticsPage() {
   const params = useParams();
   const eventId = params?.eventId as string;
   const [event, setEvent] = useState<Event | null>(null);
@@ -88,6 +88,7 @@ export default function EventDetailsPage() {
   const [emblaRef, emblaApi] = EmblaCarousel({ loop: true }, [Autoplay({ delay: 5000 })]);
   const { token } = useAppSelector((state) => state.auth);
   const router = useRouter();
+  
   // Fetch event details
  useEffect(() => {
     if (!eventId) return;
@@ -119,7 +120,7 @@ export default function EventDetailsPage() {
   }
 
   const handleViewAnalytics = (eventId: string) => {
-    router.push(`${eventId}/analytics`);
+    router.push(`dashboard/events/${eventId}/analytics`);
   }
 
   if (isLoading) return <TicketLoader />;
@@ -220,33 +221,21 @@ export default function EventDetailsPage() {
               <div className="border-b border-gray-200">
                 <nav className="flex -mb-px">
                   <button
-                    onClick={() => setActiveTab('description')}
-                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'description' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    onClick={() => setActiveTab('overview')}
+                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'overview' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                   >
-                    Description
+                    Overview
                   </button>
                   <button
-                    onClick={() => setActiveTab('schedule')}
-                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'schedule' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    onClick={() => setActiveTab('ticketSales')}
+                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'ticketSales' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
                   >
-                    Schedule
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('prohibited')}
-                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'prohibited' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                  >
-                    Prohibited Items
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('terms')}
-                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'terms' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                  >
-                    Terms
+                    Ticket Sales
                   </button>
                 </nav>
               </div>
               <div className="p-6">
-                {activeTab === 'description' && (
+                {activeTab === 'overview' && (
                   <div className="prose max-w-none text-gray-700">
                     {event.description.split('\n\n').map((paragraph, i) => (
                       <p key={i} className="mb-4">{paragraph}</p>
@@ -300,47 +289,6 @@ export default function EventDetailsPage() {
           </div>
         </div>
       </motion.div>
-
-      {/* Right Sidebar Column */}
-      <div className="lg:w-80 space-y-6">
-        {/* Schedule Details Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="bg-white rounded-xl shadow-md p-6"
-        >
-          <h2 className="text-xl font-bold text-purple-900 mb-4 flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-purple-600" />
-            Event Schedule
-          </h2>
-          <div className="space-y-4">
-            {event.eventSchedule.map((schedule, i) => (
-              <div key={i} className="border-l-2 border-purple-200 pl-4 py-1">
-                <h3 className="font-medium text-purple-900">
-                  {format(parseISO(schedule.date), 'MMM d, yyyy')}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {schedule.startTime} - {schedule.endTime}
-                </p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Booking Card */}
-        
-          <motion.button
-            onClick={() => handleViewAnalytics(event.eventId)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full bg-white text-purple-700 hover:bg-gray-100 font-medium rounded-lg px-6 py-3 shadow-md flex items-center justify-center gap-2"
-          >
-            <LayoutDashboardIcon className="h-5 w-5" />
-            View Analytics
-          </motion.button>
-      </div>
     </div>
   </div>
 </div>
