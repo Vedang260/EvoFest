@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, UserRole } from "@prisma/client";
 import { authMiddleware } from "@/lib/middleware/authMiddleware";
 
 const prisma = new PrismaClient();
@@ -11,20 +11,40 @@ export async function GET(request: Request) {
 
         if ('status' in user) return user;
 
-        const events = await prisma.event.findMany({
-            select: {
-                eventId: true,
-                title: true,
-                media: true,
-                category: true,
-                startDate: true,
-                endDate: true,
-                venue: true,
-            },
-            orderBy: {
-                startDate: 'asc',
-            },
-        });
+        let events;
+        if(user.role === UserRole.ADMIN || user.role === UserRole.ATTENDEE){
+            events = await prisma.event.findMany({
+                select: {
+                    eventId: true,
+                    title: true,
+                    media: true,
+                    category: true,
+                    startDate: true,
+                    endDate: true,
+                    venue: true,
+                },
+                orderBy: {
+                    startDate: 'asc',
+                },
+            });
+        }
+        else if(user.role === UserRole.ORGANIZER){
+            events = await prisma.event.findMany({
+                select: {
+                    eventId: true,
+                    title: true,
+                    media: true,
+                    category: true,
+                    startDate: true,
+                    endDate: true,
+                    venue: true,
+                },
+                where: { organizerId: user.userId},
+                orderBy: {
+                    startDate: 'asc',
+                },
+            });
+        }
 
         return NextResponse.json({
             success: true,
