@@ -74,12 +74,12 @@ const Navbar = () => {
         return [
           {
             name: 'Your Events',
-            href: '/organizer/events',
+            href: '/dashboard/organizer/events',
             icon: <Calendar size={18} className="text-primary-600" />,
           },
           {
             name: 'Create New Event',
-            href: '/dashboard/events/new',
+            href: '/dashboard/organizer/events/new',
             icon: <Plus size={18} className="text-primary-600" />,
           },
           {
