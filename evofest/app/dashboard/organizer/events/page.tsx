@@ -95,7 +95,7 @@ export default function EventsPage() {
     }, []);
 
     const handleViewDetails = (eventId: string) => {
-      router.push(`/events/${eventId}`);
+      router.push(`dashboard/events/${eventId}`);
     };
 
 
