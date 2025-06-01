@@ -36,6 +36,7 @@ import { useRouter } from 'next/navigation';
 import OverviewTab from '@/components/dashboard/events/overview';
 import TicketSalesTab from '@/components/dashboard/events/ticketSales';
 import GuestsCheckInTab from '@/components/dashboard/events/guestCheckIn';
+import DailyDemographicsTab from '@/components/dashboard/events/demographics';
 
 // Types
 interface EventSchedule {
@@ -241,12 +242,19 @@ export default function EventAnalyticsPage() {
                   >
                     Guests & CheckIn
                   </button>
+                  <button
+                    onClick={() => setActiveTab('demographics')}
+                    className={`py-4 px-6 text-sm font-medium ${activeTab === 'demographics' ? 'border-purple-500 text-purple-600 border-b-2' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Demographics
+                  </button>
                 </nav>
               </div>
               <div className="p-6">
                 {activeTab === 'overview' && <OverviewTab eventId={eventId} />}
                 {activeTab === 'ticketSales' && <TicketSalesTab eventId={eventId} />}
                 {activeTab === 'guestsCheckIn' && <GuestsCheckInTab eventId={eventId} />}
+                {activeTab === 'demographics' && <DailyDemographicsTab eventId={eventId} />}
               </div>
             </motion.div>
           </div>
