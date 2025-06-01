@@ -78,7 +78,7 @@ const LoginPage = () => {
           }));
           if(result.user.role === 'ATTENDEE'){
               router.push('/events');
-          }else if(result.user.role === 'ORGANIZER'){
+          }else if(result.user.role === 'ORGANIZER' || result.user.role === 'ADMIN'){
               router.push('/');
           }else if(result.user.role === 'STAFF'){
               router.push(`/events`);

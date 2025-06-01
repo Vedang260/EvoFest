@@ -70,6 +70,19 @@ const Navbar = () => {
     ];
 
     switch (user.role) {
+      case 'ADMIN':
+        return [
+          {
+            name: 'Admin Dashboard',
+            href: '/admin/dashboard',
+            icon: <LayoutDashboard size={18} className="text-primary-600" />,
+          },
+          {
+            name: 'All Events',
+            href: '/dashboard/admin/events',
+            icon: <Calendar size={18} className="text-primary-600" />,
+          }
+        ]
       case 'ORGANIZER':
         return [
           {
