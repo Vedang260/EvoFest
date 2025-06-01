@@ -34,6 +34,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { TicketLoader } from '@/components/ui/ticketLoader';
 import { useRouter } from 'next/navigation';
 import OverviewTab from '@/components/dashboard/events/overview';
+import TicketSalesTab from '@/components/dashboard/events/ticketSales';
 
 // Types
 interface EventSchedule {
@@ -237,7 +238,7 @@ export default function EventAnalyticsPage() {
               </div>
               <div className="p-6">
                 {activeTab === 'overview' && <OverviewTab eventId={eventId} />}
-                
+                {activeTab === 'ticketSales' && <TicketSalesTab eventId={eventId} />}
               </div>
             </motion.div>
           </div>
