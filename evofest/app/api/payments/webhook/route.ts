@@ -182,6 +182,7 @@ async function handleSuccessfulCheckout(event: Stripe.Event) {
   try {
       const socketServer = getSocketServer();
       if(capacity && totalGuests){
+        console.log('Before emission - capacity:', capacity, 'totalGuests:', totalGuests);
           socketServer.emit('ticketUpdate', {
             eventId,
             available: Number(capacity)-Number(totalGuests)

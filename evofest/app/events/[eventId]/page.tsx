@@ -127,6 +127,7 @@ export default function EventDetailsPage() {
 
     // Listen for ticket updates for this specific event
     socket.on('ticketUpdate', (data: { eventId: string; available: number }) => {
+      console.log('Ticket Update is received: ', data);
       if ((data.eventId === eventId)) {
         if (event) {
           setEvent({ ...event, availableTickets: data.available });
