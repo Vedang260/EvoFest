@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import QRCode from 'qrcode';
 import nodemailer from 'nodemailer';
+import { Server } from 'socket.io';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-04-30.basil' });
 const endpointSecret = process.env.WEBHOOK_SECRET_KEY!;
@@ -17,6 +18,19 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
+// Initialize Socket.io server (singleton pattern)
+let io: Server;
+
+function getSocketServer() {
+  if (!io) {
+    io = new Server({
+      addTrailingSlash: false,
+    });
+    console.log('Socket.io server initialized');
+  }
+  return io;
+}
 
 export async function POST(req: Request) {
   const rawBody = await req.arrayBuffer();
@@ -121,6 +135,62 @@ async function handleSuccessfulCheckout(event: Stripe.Event) {
       }).catch(e => console.error('Email failed:', e));
     })
   );
+
+  const firstTicketId = tickets[0]?.dailyTicketTypeEntryId;
+  if (!firstTicketId) throw new Error("No ticket data available");
+
+  const ticketEntry = await prisma.dailyTicketTypeEntry.findUnique({
+    where: { dailyTicketTypeEntryId: firstTicketId },
+    select: {
+      eventSchedule: {
+        select: {
+          eventId: true
+        }
+      }
+    }
+  });
+
+  const eventId = ticketEntry?.eventSchedule?.eventId;
+  if (!eventId) throw new Error("Could not resolve eventId from ticket");
+
+  const bookings = await prisma.booking.findMany({
+    where: {
+      dailyTicketTypeEntry: {
+        eventSchedule: {
+          eventId
+        }
+      }
+    },
+    include: {
+      guests: {
+        select: { guestId: true }
+      }
+    }
+  });
+
+  const totalGuests = bookings.reduce(
+    (acc, booking) => acc + booking.guests.length,
+    0
+  );
+
+  const capacity = await prisma.event.findUnique({
+    where: { eventId},
+    select: {capacity: true}
+  });
+ 
+// Step 3: Emit real-time update to all connected clients
+  try {
+      const socketServer = getSocketServer();
+      if(capacity && totalGuests){
+          socketServer.emit('ticketUpdate', {
+            eventId,
+            available: Number(capacity)-Number(totalGuests)
+        });
+        console.log(`Emitted ticket update for event ${eventId}`);
+      }
+  } catch (socketError) {
+    console.error('Failed to emit ticket update:', socketError);
+  }
 
   return NextResponse.json({ success: true });
 }

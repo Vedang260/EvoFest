@@ -32,7 +32,7 @@ import { setLoading } from '@/lib/redux/slice/loadingSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { TicketLoader } from '@/components/ui/ticketLoader';
 import { useRouter } from 'next/navigation';
-
+import { io } from 'socket.io-client';
 // Types
 interface EventSchedule {
   date: string;
@@ -56,6 +56,7 @@ interface Event {
   createdAt: string;
   organizerId: string;
   eventSchedule: EventSchedule[];
+  availableTickets: number;
 }
 
 interface ApiResponse {
@@ -87,6 +88,8 @@ export default function EventDetailsPage() {
   const [emblaRef, emblaApi] = EmblaCarousel({ loop: true }, [Autoplay({ delay: 5000 })]);
   const { token } = useAppSelector((state) => state.auth);
   const router = useRouter();
+  const [availableTickets, setAvailableTickets] = useState<number>(0);
+  const [isConnected, setIsConnected] = useState(false);
   // Fetch event details
  useEffect(() => {
     if (!eventId) return;
@@ -111,6 +114,34 @@ export default function EventDetailsPage() {
     };
 
     fetchEvent();
+  }, [eventId]);
+
+  useEffect(() => {
+    // Connect to Socket.io server
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL);
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      console.log('Connected to WebSocket server');
+    });
+
+    // Listen for ticket updates for this specific event
+    socket.on('ticketUpdate', (data: { eventId: string; available: number }) => {
+      if ((data.eventId === eventId)) {
+        if (event) {
+          setEvent({ ...event, availableTickets: data.available });
+        }
+        console.log('Received ticket update:', data.available);
+      }
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [eventId]);
 
   if (error || !event) {
@@ -340,11 +371,12 @@ export default function EventDetailsPage() {
           <div className="space-y-4 mb-6">
             <div className="flex items-center gap-2">
               <TicketIcon className="h-5 w-5 text-purple-200" />
+              <span>{event.availableTickets} Tickets Available</span>
             </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-purple-200" />
               <span>{event.capacity.toLocaleString()} seats available</span>
-            </div>
+            </div> */}
           </div>
           <motion.button
             onClick={() => handleBooking(event.eventId)}

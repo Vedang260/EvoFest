@@ -26,6 +26,29 @@ export async function GET( request: Request,
             }
         })
 
+        const bookings = await prisma.booking.findMany({
+            where: {
+            dailyTicketTypeEntry: {
+                eventSchedule: {
+                eventId
+                }
+            }
+            },
+            include: {
+            guests: {
+                select: { guestId: true }
+            }
+            }
+        });
+
+        const totalGuests = bookings.reduce(
+            (acc, booking) => acc + booking.guests.length,
+            0
+        );
+
+        console.log("Total guests:", totalGuests);
+
+        const updatedEvent = {...event, availableTickets: Number(event?.capacity) - Number(totalGuests)}
         if (!event) {
             return NextResponse.json({ 
                 success: false,
@@ -36,7 +59,7 @@ export async function GET( request: Request,
         return NextResponse.json({
             success: true,
             message: 'Event details are fetched successfully',
-            event: event
+            event: updatedEvent
         })
     } catch (error: any) {
         console.error('error: ', error.message)
