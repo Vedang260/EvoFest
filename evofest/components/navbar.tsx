@@ -81,7 +81,8 @@ const Navbar = () => {
             name: 'All Events',
             href: '/dashboard/admin/events',
             icon: <Calendar size={18} className="text-primary-600" />,
-          }
+          },
+          ...commonItems,
         ]
       case 'ORGANIZER':
         return [
