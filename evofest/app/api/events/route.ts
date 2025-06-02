@@ -12,7 +12,7 @@ export async function GET(request: Request) {
         if ('status' in user) return user;
 
         let events;
-        if(user.role === UserRole.ADMIN || user.role === UserRole.ATTENDEE){
+        if(user.role === UserRole.ADMIN || user.role === UserRole.ATTENDEE || UserRole.STAFF){
             events = await prisma.event.findMany({
                 select: {
                     eventId: true,

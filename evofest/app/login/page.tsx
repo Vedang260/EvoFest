@@ -81,7 +81,7 @@ const LoginPage = () => {
           }else if(result.user.role === 'ORGANIZER' || result.user.role === 'ADMIN'){
               router.push('/');
           }else if(result.user.role === 'STAFF'){
-              router.push(`/events`);
+              router.push('/events');
           }
       } else {
         // Handle registration failure

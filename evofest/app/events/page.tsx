@@ -103,19 +103,29 @@ export default function EventsPage() {
     };
 
   // Filter events based on search and filters
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         event.venue.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCity = !selectedCity || event.venue.includes(selectedCity);
-    const matchesDate = !selectedDate || 
-                       (new Date(event.startDate).toDateString() === new Date(selectedDate).toDateString());
-    const matchesCategory = !selectedCategory || event.category === selectedCategory;
+  // const filteredEvents = events.filter(event => {
+  //   const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  //                        event.venue.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesCity = !selectedCity || event.venue.includes(selectedCity);
+  //   const matchesDate = !selectedDate || 
+  //                      (new Date(event.startDate).toDateString() === new Date(selectedDate).toDateString());
+  //   const matchesCategory = !selectedCategory || event.category === selectedCategory;
     
-    return matchesSearch && matchesCity && matchesDate && matchesCategory;
-  });
+  //   return matchesSearch && matchesCity && matchesDate && matchesCategory;
+  // });
+const filteredEvents = Array.isArray(events) ? events?.filter(event => {
+  const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        event.venue.toLowerCase().includes(searchTerm.toLowerCase());
+  const matchesCity = !selectedCity || event.venue.includes(selectedCity);
+  const matchesDate = !selectedDate || 
+                      (new Date(event.startDate).toDateString() === new Date(selectedDate).toDateString());
+  const matchesCategory = !selectedCategory || event.category === selectedCategory;
+  
+  return matchesSearch && matchesCity && matchesDate && matchesCategory;
+}) : [];
 
   // Hero carousel images (using first 4 events' first images)
-  const heroImages = events.slice(0, 4).map(event => event.media[0]).filter(Boolean);
+  const heroImages = events?.slice(0, 4).map(event => event.media[0]).filter(Boolean);
 
   return (
     <>
@@ -124,11 +134,11 @@ export default function EventsPage() {
       {/* Hero Carousel with Search Overlay */}
     <section className="relative min-h-[60dvh] w-full">
     {/* Background Carousel */}
-    {heroImages.length > 0 && (
+    {heroImages?.length > 0 && (
         <div className="absolute inset-0">
         <div className="h-full w-full" ref={emblaRef}>
             <div className="flex h-full">
-            {heroImages.map((image, index) => (
+            {heroImages?.map((image, index) => (
                 <div key={index} className="relative h-full w-full flex-shrink-0">
                 <Image
                     src={image}

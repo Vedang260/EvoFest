@@ -3,6 +3,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Add this to your global CSS or component styles */
+.embla__autoplay-progress {
+  display: none !important;
+}
+
 @layer utilities {
   .animate-gradient-x {
     background-size: 200% 200%;

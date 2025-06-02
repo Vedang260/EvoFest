@@ -21,7 +21,12 @@ export async function GET( request: Request,
                             eventId: eventId,  // filter eventSchedules matching eventId
                         }
                     }
-                }
+                },
+                checkIns: {
+                    none: {
+                        eventId: eventId, // ensures guest has not checked in for this event
+                    },
+                },
             }
         });
 
